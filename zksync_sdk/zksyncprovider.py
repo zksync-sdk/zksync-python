@@ -1,10 +1,10 @@
 from enum import Enum
-from typing import List, Optional, Union
+from typing import List, Optional, Tuple, Union
 
 from eth_typing import Address
 
 from zksync_sdk.providers import JsonRPCProvider
-from zksync_sdk.types import EncodedTx, TxEthSignature
+from zksync_sdk.types import EncodedTx, Token, Tokens, TxEthSignature
 
 
 class SignatureType(Enum):
@@ -23,20 +23,28 @@ class EthSignature:
 
 
 class TxType(Enum):
-    pass
+    withdraw = "Withdraw"
+    transfer = "Transfer"
+    fast_withdraw = "FastWithdraw"
+    change_pub_key = "ChangePubKeyOnchainAuth"
 
 
 class ZkSyncProvider:
     def __init__(self, provider: JsonRPCProvider):
         self.provider = provider
 
-    async def submit_tx(self, tx: EncodedTx, signature: TxEthSignature,
-                        fast_processing: bool = False):
+    async def submit_tx(self, tx: EncodedTx, signature: Optional[TxEthSignature],
+                        fast_processing: bool = False) -> str:
+        signature = signature.dict() if signature is not None else None
         return await self.provider.request("tx_submit",
-                                           [tx.dict(), signature.dict(), fast_processing])
+                                           [tx.dict(), signature, fast_processing])
 
-    async def get_tokens(self):
-        return await self.provider.request("tokens", None)
+    async def get_tokens(self) -> Tokens:
+        tokens_resp = await self.provider.request("tokens", None)
+        tokens = [Token(address=token['address'], id=token['id'], symbol=token['symbol'],
+                        decimals=token['decimals']) for token in tokens_resp.values()]
+
+        return Tokens(tokens=tokens)
 
     async def submit_txs_batch(self, transactions: List[Transaction],
                                signatures: Optional[
@@ -55,6 +63,10 @@ class ZkSyncProvider:
     async def get_state(self, address: str):
         return await self.provider.request("account_info", [address])
 
+    async def get_account_nonce(self, address: str) -> Tuple[int, int]:
+        state = await self.provider.request("account_info", [address])
+        return state['id'], state['committed']['nonce']
+
     async def get_tx_receipt(self, address: str):
         return await self.provider.request("tx_info", [address])
 
@@ -65,4 +77,10 @@ class ZkSyncProvider:
                                          token_like):
 
         return await self.provider.request('get_txs_batch_fee_in_wei',
-                                           [tx_types, addresses, token_like])
+                                           [[tx_type.value for tx_type in tx_types],
+                                            addresses, token_like])
+
+    async def get_transaction_fee(self, tx_type: TxType, address: Address,
+                                  token_like):
+
+        return await self.provider.request('get_tx_fee', [tx_type.value, address, token_like])

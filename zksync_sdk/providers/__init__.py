@@ -1,10 +1,10 @@
 from abc import ABC, abstractmethod
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 
 
 class JsonRPCProvider(ABC):
     @abstractmethod
-    async def request(self, method: str, params: Optional[List]):
+    async def request(self, method: str, params: Optional[List]) -> Any:
         pass
 
     def create_request(self, method: str, params=None):

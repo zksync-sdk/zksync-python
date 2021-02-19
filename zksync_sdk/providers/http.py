@@ -12,7 +12,6 @@ class HttpJsonRPCProvider(JsonRPCProvider):
         self.network = network
 
     async def request(self, method: str, params: List):
-        print(params)
         async with httpx.AsyncClient() as client:
             response = await client.post(self.network.zksync_url,
                                          json=self.create_request(method, params))

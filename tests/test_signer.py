@@ -35,9 +35,9 @@ class ZkSyncSignerTest(TestCase):
         assert tr.encoded_message().hex() == res
 
     def test_withdraw_bytes(self):
-        tr = Withdraw(from_address=bytes.fromhex("edE35562d3555e61120a151B3c8e8e91d83a378a"),
-                      eth_address=bytes.fromhex("19aa2ed8712072e918632259780e587698ef58df"),
-                      token_id=0,
+        tr = Withdraw(from_address="0xedE35562d3555e61120a151B3c8e8e91d83a378a",
+                      to_address="0x19aa2ed8712072e918632259780e587698ef58df",
+                      token=Token.eth(),
                       amount=1000000000000, fee=1000000, nonce=12, valid_from=0,
                       valid_until=4294967295, account_id=44)
 
@@ -46,8 +46,8 @@ class ZkSyncSignerTest(TestCase):
 
     def test_forced_exit_bytes(self):
         tr = ForcedExit(
-            target=bytes.fromhex("19aa2ed8712072e918632259780e587698ef58df"),
-            token_id=0,
+            target="0x19aa2ed8712072e918632259780e587698ef58df",
+            token=Token.eth(),
             fee=1000000, nonce=12, valid_from=0,
             valid_until=4294967295, initiator_account_id=44
         )

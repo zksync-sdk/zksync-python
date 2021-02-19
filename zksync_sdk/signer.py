@@ -19,7 +19,7 @@ class ZkSyncSigner:
     def derive_private_key(self, account: LocalAccount, chain_id: ChainId):
         message = self.MESSAGE
         if chain_id != ChainId.MAINNET:
-            message = f"{message}\nChain ID: {chain_id}"
+            message = f"{message}\nChain ID: {chain_id}."
         message = encode_defunct(message.encode())
         signature = account.sign_message(message)
         private_key = self.library.private_key_from_seed(signature.signature)

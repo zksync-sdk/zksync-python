@@ -1,3 +1,4 @@
+from decimal import Decimal
 import os
 from unittest import IsolatedAsyncioTestCase
 
@@ -9,7 +10,6 @@ from zksync_sdk.ethereum_provider import EthereumProvider
 from zksync_sdk.network import rinkeby
 from zksync_sdk.providers.http import HttpJsonRPCProvider
 from zksync_sdk.signer import EthereumSigner, ZkSyncSigner
-from zksync_sdk.types import Token, Transfer
 from zksync_sdk.wallet import Wallet
 from zksync_sdk.zksync import ZkSync
 from zksync_sdk.zksyncprovider import ZkSyncProvider
@@ -46,15 +46,21 @@ class TestWallet(IsolatedAsyncioTestCase):
         assert data['address'].lower() == self.account.address.lower()
 
     async def test_transfer(self):
-        state = await self.wallet.zk_provider.get_state(self.account.address)
-        token = Token.eth()
-        transfer = Transfer(account_id=state['id'], from_address=self.account.address,
-                            to_address="0x21dDF51966f2A66D03998B0956fe59da1b3a179F",
-                            amount=1 * 10 ** 16, fee=3 * 10 ** 15,
-                            nonce=state['committed']['nonce'],
-                            valid_from=0,
-                            valid_until=2 ** 31, token=token)
-        eth_signature = self.wallet.eth_signer.sign(transfer)
-        zk_signature = self.wallet.zk_signer.sign_tx(transfer)
-        transfer.signature = zk_signature
-        res = await self.wallet.zk_provider.submit_tx(transfer, eth_signature)
+        tr = await self.wallet.transfer("0x21dDF51966f2A66D03998B0956fe59da1b3a179F",
+                                        amount=Decimal("0.0001"), token="ETH",
+                                        fast_processing=False)
+        print(tr)
+
+    async def test_forced_exit(self):
+        tr = await self.wallet.forced_exit("0x21dDF51966f2A66D03998B0956fe59da1b3a179F", "USDC")
+
+        print(tr)
+
+    async def test_withdraw(self):
+        tr = await self.wallet.withdraw("0x21dDF51966f2A66D03998B0956fe59da1b3a179F",
+                                        Decimal("0.001"), "USDT")
+
+        print(tr)
+
+    async def test_get_tokes(self):
+        await self.wallet.zk_provider.get_tokens()
