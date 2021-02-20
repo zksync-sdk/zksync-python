@@ -11,23 +11,24 @@ from zksync_sdk.serialize_utils import (int_to_bytes, packed_amount_checked, pac
                                         serialize_token_id, )
 from zksync_sdk.types.signatures import TxEthSignature, TxSignature
 
+DEFAULT_TOKEN_ADDRESS = "0x0000000000000000000000000000000000000000"
+
 
 class Token(BaseModel):
     address: str
     id: int
     symbol: str
     decimals: int
-    DefaultAddress = "0x0000000000000000000000000000000000000000"
 
     @classmethod
     def eth(cls):
         return cls(id=0,
-                   address=Token.DefaultAddress,
+                   address=DEFAULT_TOKEN_ADDRESS,
                    symbol="ETH",
                    decimals=18)
 
     def is_eth(self) -> bool:
-        return self.symbol == "ETH" and self.address == Token.DefaultAddress
+        return self.symbol == "ETH" and self.address == DEFAULT_TOKEN_ADDRESS
 
     def decimal_amount(self, amount: int) -> Decimal:
         return Decimal(amount).scaleb(-self.decimals)

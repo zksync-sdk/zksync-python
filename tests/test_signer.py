@@ -1,3 +1,4 @@
+from decimal import Decimal
 import os
 from unittest import TestCase
 
@@ -62,16 +63,18 @@ class ZkSyncSignerTest(TestCase):
 
     def test_signature(self):
         account = Account.from_key(PRIVATE_KEY)
+        token = Token.eth()
         signer = ZkSyncSigner(account, self.library, ChainId.MAINNET)
         tr = Transfer(from_address="0xedE35562d3555e61120a151B3c8e8e91d83a378a",
                       to_address="0x19aa2ed8712072e918632259780e587698ef58df",
                       token=Token.eth(),
-                      amount=1000000000000 * 10 ** 18, fee=1000000 * 10 ** 18, nonce=12,
+                      amount=token.from_decimal(Decimal(1000000000000)),
+                      fee=token.from_decimal(Decimal(1000000)),
+                      nonce=12,
                       valid_from=0,
                       valid_until=4294967295, account_id=44)
-        print(f"res {tr.human_readable_message().encode().hex()}")
         res = signer.sign_tx(tr)
-        print(res.signature.encode().hex())
+        assert res.signature.encode().hex() == 'c4f22a4dd8e9d7978944bfa166f7e09599fbcd3dcc4c2849cbf497e0d1f1eba64830b792d6eccee471f571cf208d6ad6a6d7ed663581f8d724068bc801e42800'
 
 
 def check_bytes(a, b):

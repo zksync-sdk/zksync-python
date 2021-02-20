@@ -8,6 +8,26 @@ MAX_NUMBER_OF_ACCOUNTS = 2 ** 24
 MAX_NUMBER_OF_TOKENS = 128
 
 
+class SerializationError(Exception):
+    pass
+
+
+class WrongIntegerError(SerializationError):
+    pass
+
+
+class WrongBitsError(SerializationError):
+    pass
+
+
+class ValueNotPackedError(SerializationError):
+    pass
+
+
+class WrongValueError(SerializationError):
+    pass
+
+
 def int_to_bytes(val: int, length=4):
     return val.to_bytes(length, byteorder='big')
 
@@ -25,7 +45,7 @@ def integer_to_float(integer: int, exp_bits: int, mantissa_bits: int, exp_base: 
     max_exponent = exp_base ** max_exponent_power
     max_mantissa = 2 ** mantissa_bits - 1
     if integer > max_mantissa * max_exponent:
-        raise Exception
+        raise WrongIntegerError
 
     exponent = 0
     exponent_temp = 1
@@ -53,7 +73,7 @@ def integer_to_float(integer: int, exp_bits: int, mantissa_bits: int, exp_base: 
 
 def bits_into_bytes_in_be_order(bits: List[int]):
     if len(bits) % 8 != 0:
-        raise Exception("wrong number of bits")
+        raise WrongBitsError("wrong number of bits")
     size = len(bits) // 8
     result = [0] * size
     for i in range(size):
@@ -156,45 +176,41 @@ def closest_packable_transaction_fee(fee: int) -> int:
 
 def packed_fee_checked(fee: int):
     if closest_packable_transaction_fee(fee) != fee:
-        raise Exception
+        raise ValueNotPackedError
     return pack_fee(fee)
 
 
 def packed_amount_checked(amount: int):
     if closest_packable_amount(amount) != amount:
-        raise Exception
+        raise ValueNotPackedError
     return pack_amount(amount)
 
 
 def serialize_nonce(nonce: int):
     if nonce < 0:
-        raise Exception
+        raise WrongValueError
     return int_to_bytes(nonce, 4)
 
 
 def serialize_timestamp(timestamp: int):
     if timestamp < 0:
-        raise Exception
+        raise WrongValueError
     return b"\x00" * 4 + int_to_bytes(timestamp, 4)
 
 
 def serialize_token_id(token_id: int):
     if token_id < 0:
-        raise Exception
+        raise WrongValueError
     if token_id > MAX_NUMBER_OF_TOKENS:
-        raise Exception
+        raise WrongValueError
     return int_to_bytes(token_id, 2)
-
-
-def serialize_amount_full(amount: int):
-    pass
 
 
 def serialize_account_id(account_id: int):
     if account_id < 0:
-        raise Exception
+        raise WrongValueError
     if account_id > MAX_NUMBER_OF_ACCOUNTS:
-        raise Exception
+        raise WrongValueError
     return int_to_bytes(account_id, 4)
 
 
@@ -210,5 +226,5 @@ def serialize_address(address: str) -> bytes:
     address = remove_address_prefix(address)
     address_bytes = bytes.fromhex(address)
     if len(address_bytes) != 20:
-        raise Exception
+        raise WrongValueError
     return address_bytes

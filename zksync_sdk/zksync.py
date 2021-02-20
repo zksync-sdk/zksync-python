@@ -65,6 +65,5 @@ class ERC20Contract(Contract):
 
     def is_deposit_approved(self, erc20_approve_threshold=ERC20_APPROVE_TRESHOLD):
         allowance = self._call_method("allowance", self.account.address,
-                                      self.zksync_address,
-                                      )
+                                      self.zksync_address)
         return allowance >= erc20_approve_threshold

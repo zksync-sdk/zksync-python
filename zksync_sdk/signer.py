@@ -9,14 +9,14 @@ from zksync_sdk.types import ChainId, EncodedTx, SignatureType, TxEthSignature, 
 class ZkSyncSigner:
     MESSAGE = "Access zkSync account.\n\nOnly sign this message for a trusted client!"
 
-    def __init__(self, account: LocalAccount, library: ZkSyncLibrary, chain_id: ChainId):
+    def __init__(self, account: BaseAccount, library: ZkSyncLibrary, chain_id: ChainId):
         self.library = library
         self.private_key = self.derive_private_key(account, chain_id)
         self.public_key = self.library.get_public_key(self.private_key)
         self.account = account
         self.chain_id = chain_id
 
-    def derive_private_key(self, account: LocalAccount, chain_id: ChainId):
+    def derive_private_key(self, account: BaseAccount, chain_id: ChainId):
         message = self.MESSAGE
         if chain_id != ChainId.MAINNET:
             message = f"{message}\nChain ID: {chain_id}."

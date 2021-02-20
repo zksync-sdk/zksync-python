@@ -5,14 +5,9 @@ from typing import List, Optional, Tuple, Union
 from eth_typing import Address
 
 from zksync_sdk.providers import JsonRPCProvider
-from zksync_sdk.types import (AccountState, ContractAddress, EncodedTx, EthOpInfo, Fee, Token,
-                              TokenLike,
-                              Tokens, TransactionDetails, TxEthSignature, )
-
-
-class SignatureType(Enum):
-    ethereum_signature = "EthereumSignature"
-    EIP1271_signature = "EIP1271Signature"
+from zksync_sdk.types import (AccountState, ContractAddress, EncodedTx, EthOpInfo, Fee,
+                              SignatureType, Token, TokenLike, Tokens, TransactionDetails,
+                              TxEthSignature, )
 
 
 class Transaction:
@@ -44,7 +39,8 @@ class ZkSyncProvider:
 
     async def get_tokens(self) -> Tokens:
         data = await self.provider.request("tokens", None)
-        return Tokens(**data)
+        tokens = [Token(**token) for token in data.values()]
+        return Tokens(tokens=tokens)
 
     async def submit_txs_batch(self, transactions: List[Transaction],
                                signatures: Optional[

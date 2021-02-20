@@ -7,24 +7,25 @@ except ImportError:
     import importlib_resources as pkg_resources
 from . import contract_abi
 
-abi = None
+zksync_abi = None
+ierc20_abi = None
 
 
 def zk_sync_abi():
-    global abi
+    global zksync_abi
 
-    if abi is None:
+    if zksync_abi is None:
         abi_text = pkg_resources.read_text(contract_abi, 'ZkSync.json')
-        abi = json.loads(abi_text)['abi']
+        zksync_abi = json.loads(abi_text)['abi']
 
-    return abi
+    return zksync_abi
 
 
 def erc20_abi():
-    global abi
+    global ierc20_abi
 
-    if abi is None:
+    if ierc20_abi is None:
         abi_text = pkg_resources.read_text(contract_abi, 'IERC20.json')
-        abi = json.loads(abi_text)['abi']
+        ierc20_abi = json.loads(abi_text)['abi']
 
-    return abi
+    return ierc20_abi

@@ -3,9 +3,16 @@ from decimal import Decimal
 from zksync_sdk.ethereum_provider import EthereumProvider
 from zksync_sdk.signer import EthereumSigner, ZkSyncSigner
 from zksync_sdk.types import (EncodedTx, ForcedExit, Token, TokenLike, Tokens, Transfer,
-                              TxEthSignature,
-                              Withdraw, )
+                              TxEthSignature, Withdraw, )
 from zksync_sdk.zksync_provider import TxType, ZkSyncProvider
+
+
+class WalletError(Exception):
+    pass
+
+
+class TokenNotFoundError(Exception):
+    pass
 
 
 class Wallet:
@@ -15,7 +22,7 @@ class Wallet:
         self.zk_signer = zk_signer
         self.eth_signer = eth_signer
         self.zk_provider = provider
-        self.tokens = Tokens()
+        self.tokens = Tokens(tokens=[])
 
     async def send_signed_transaction(self, tx: EncodedTx, eth_signature: TxEthSignature,
                                       fast_processing: bool) -> str:
@@ -71,8 +78,7 @@ class Wallet:
         return await self.send_signed_transaction(transfer, eth_signature, fast_processing)
 
     async def withdraw(self, eth_address: str, amount: Decimal, token: TokenLike,
-                       fee: Decimal = None,
-                       fast: bool = False) -> str:
+                       fee: Decimal = None, fast: bool = False) -> str:
         account_id, nonce = await self.zk_provider.get_account_nonce(self.address())
         token = await self.resolve_token(token)
         if fee is None:
@@ -112,7 +118,7 @@ class Wallet:
         self.tokens = await self.zk_provider.get_tokens()
         resolved_token = self._find_cached_tokens(token)
         if resolved_token is None:
-            raise Exception
+            raise TokenNotFoundError
         return resolved_token
 
     def _find_cached_tokens(self, token: TokenLike) -> Token:

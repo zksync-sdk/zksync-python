@@ -1,5 +1,18 @@
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Optional
+from typing import Any, List, Optional
+
+
+class ProviderError(Exception):
+    def __init__(self, basic_response, *args):
+        self.basic_response = basic_response
+        super().__init__(*args)
+
+
+class ResponseError(Exception):
+    def __init__(self, id, text, *args):
+        self.id = id
+        self.text = text
+        super().__init__(*args)
 
 
 class JsonRPCProvider(ABC):

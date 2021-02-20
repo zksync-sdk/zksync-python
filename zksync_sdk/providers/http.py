@@ -3,7 +3,7 @@ from typing import List
 
 import httpx
 
-from . import JsonRPCProvider
+from . import JsonRPCProvider, ProviderError, ResponseError
 from ..network import Network
 
 
@@ -18,8 +18,9 @@ class HttpJsonRPCProvider(JsonRPCProvider):
             if response.status_code == OK:
                 result = response.json()
                 if "error" in result:
-                    raise Exception(result["error"])
+                    data = result["error"]
+                    raise ResponseError(data['id'], data['message'])
                 else:
                     return result['result']
             else:
-                raise Exception
+                raise ProviderError(response, "Unexpected status code")

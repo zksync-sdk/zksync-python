@@ -1,6 +1,10 @@
 from dataclasses import dataclass
+from enum import Enum
 
-from zksync_sdk.zksync_provider import SignatureType
+
+class SignatureType(Enum):
+    ethereum_signature = "EthereumSignature"
+    EIP1271_signature = "EIP1271Signature"
 
 
 @dataclass
@@ -14,7 +18,7 @@ class TxEthSignature:
 
     def dict(self):
         return {
-            "type":      self.type.name,
+            "type":      self.type.value,
             "signature": self.signature
         }
 
