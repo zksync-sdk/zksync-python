@@ -1,36 +1,18 @@
 import abc
 from dataclasses import dataclass
 from decimal import Decimal
-from enum import IntEnum
-from typing import List, Optional, Union
+from typing import List, Optional
+
+from pydantic import BaseModel
 
 from zksync_sdk.serialize_utils import (int_to_bytes, packed_amount_checked, packed_fee_checked,
                                         serialize_account_id,
                                         serialize_address, serialize_nonce, serialize_timestamp,
                                         serialize_token_id, )
-
-TokenLike = Union[str, int]
-
-
-@dataclass
-class TxEthSignature:
-    # type: 'EthereumSignature' | 'EIP1271Signature'
-    type: str
-    signature: str
-
-    def __init__(self, type: str, signature: bytes):
-        self.signature = signature.hex()
-        self.type = type
-
-    def dict(self):
-        return {
-            "type":      self.type,
-            "signature": self.signature
-        }
+from zksync_sdk.types.signatures import TxEthSignature, TxSignature
 
 
-@dataclass
-class Token:
+class Token(BaseModel):
     address: str
     id: int
     symbol: str
@@ -43,6 +25,9 @@ class Token:
                    address=Token.DefaultAddress,
                    symbol="ETH",
                    decimals=18)
+
+    def is_eth(self) -> bool:
+        return self.symbol == "ETH" and self.address == Token.DefaultAddress
 
     def decimal_amount(self, amount: int) -> Decimal:
         return Decimal(amount).scaleb(-self.decimals)
@@ -58,20 +43,29 @@ class Token:
             return str(d)
 
 
-@dataclass
-class TxSignature:
-    public_key: str
-    signature: str
+class Tokens(BaseModel):
+    tokens: List[Token]
 
-    def __init__(self, public_key: bytes, signature: bytes):
-        self.public_key = public_key.hex()
-        self.signature = signature.hex()
+    def find_by_address(self, address: str) -> Optional[Token]:
+        found_token = [token for token in self.tokens if token.address == address]
+        if found_token:
+            return found_token[0]
+        else:
+            return None
 
-    def dict(self):
-        return {
-            "pubKey":    self.public_key,
-            "signature": self.signature
-        }
+    def find_by_id(self, token_id: int) -> Optional[Token]:
+        found_token = [token for token in self.tokens if token.id == token_id]
+        if found_token:
+            return found_token[0]
+        else:
+            return None
+
+    def find_by_symbol(self, symbol: str) -> Optional[Token]:
+        found_token = [token for token in self.tokens if token.symbol == symbol]
+        if found_token:
+            return found_token[0]
+        else:
+            return None
 
 
 class EncodedTx(abc.ABC):
@@ -90,17 +84,6 @@ class EncodedTx(abc.ABC):
     @abc.abstractmethod
     def dict(self):
         pass
-
-
-class ChainId(IntEnum):
-    MAINNET = 1
-    RINKEBY = 4
-    ROPSTEN = 3
-    LOCALHOST = 9
-
-
-class ECDSAEthAuthData:
-    pass
 
 
 @dataclass
@@ -298,40 +281,6 @@ class ForcedExit(EncodedTx):
             "validFrom":          self.valid_from,
             "validUntil":         self.valid_until,
         }
-
-
-class ContractAddress:
-    main_contract: str
-    gov_contract: str
-
-
-@dataclass
-class Tokens:
-    tokens: List[Token]
-
-    def __init__(self, tokens=None):
-        self.tokens = tokens or []
-
-    def find_by_address(self, address: str) -> Optional[Token]:
-        found_token = [token for token in self.tokens if token.address == address]
-        if found_token:
-            return found_token[0]
-        else:
-            return None
-
-    def find_by_id(self, token_id: int) -> Optional[Token]:
-        found_token = [token for token in self.tokens if token.id == token_id]
-        if found_token:
-            return found_token[0]
-        else:
-            return None
-
-    def find_by_symbol(self, symbol: str) -> Optional[Token]:
-        found_token = [token for token in self.tokens if token.symbol == symbol]
-        if found_token:
-            return found_token[0]
-        else:
-            return None
 
 
 @dataclass

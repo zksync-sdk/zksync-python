@@ -12,7 +12,7 @@ from zksync_sdk.providers.http import HttpJsonRPCProvider
 from zksync_sdk.signer import EthereumSigner, ZkSyncSigner
 from zksync_sdk.wallet import Wallet
 from zksync_sdk.zksync import ZkSync
-from zksync_sdk.zksyncprovider import ZkSyncProvider
+from zksync_sdk.zksync_provider import ZkSyncProvider
 
 
 class TestWallet(IsolatedAsyncioTestCase):
@@ -43,7 +43,7 @@ class TestWallet(IsolatedAsyncioTestCase):
 
     async def test_get_account_state(self):
         data = await self.wallet.zk_provider.get_state(self.account.address)
-        assert data['address'].lower() == self.account.address.lower()
+        assert data.address.lower() == self.account.address.lower()
 
     async def test_transfer(self):
         tr = await self.wallet.transfer("0x21dDF51966f2A66D03998B0956fe59da1b3a179F",

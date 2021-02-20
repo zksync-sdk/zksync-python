@@ -1,15 +1,18 @@
+from decimal import Decimal
 from enum import Enum
 from typing import List, Optional, Tuple, Union
 
 from eth_typing import Address
 
 from zksync_sdk.providers import JsonRPCProvider
-from zksync_sdk.types import EncodedTx, Token, Tokens, TxEthSignature
+from zksync_sdk.types import (AccountState, ContractAddress, EncodedTx, EthOpInfo, Fee, Token,
+                              TokenLike,
+                              Tokens, TransactionDetails, TxEthSignature, )
 
 
 class SignatureType(Enum):
-    EthereumSignature = 1
-    EIP1271Signature = 2
+    ethereum_signature = "EthereumSignature"
+    EIP1271_signature = "EIP1271Signature"
 
 
 class Transaction:
@@ -40,11 +43,8 @@ class ZkSyncProvider:
                                            [tx.dict(), signature, fast_processing])
 
     async def get_tokens(self) -> Tokens:
-        tokens_resp = await self.provider.request("tokens", None)
-        tokens = [Token(address=token['address'], id=token['id'], symbol=token['symbol'],
-                        decimals=token['decimals']) for token in tokens_resp.values()]
-
-        return Tokens(tokens=tokens)
+        data = await self.provider.request("tokens", None)
+        return Tokens(**data)
 
     async def submit_txs_batch(self, transactions: List[Transaction],
                                signatures: Optional[
@@ -57,30 +57,44 @@ class ZkSyncProvider:
 
         return await self.provider.request("submit_txs_batch", [transactions, signatures])
 
-    async def get_contract_address(self):
-        return await self.provider.request("contract_address", None)
+    async def get_contract_address(self) -> ContractAddress:
+        data = await self.provider.request("contract_address", None)
+        return ContractAddress(**data)
 
-    async def get_state(self, address: str):
-        return await self.provider.request("account_info", [address])
+    async def get_state(self, address: str) -> AccountState:
+        data = await self.provider.request("account_info", [address])
+        return AccountState(**data)
+
+    async def get_confirmations_for_eth_op_amount(self) -> int:
+        return await self.provider.request("get_confirmations_for_eth_op_amount", None)
 
     async def get_account_nonce(self, address: str) -> Tuple[int, int]:
-        state = await self.provider.request("account_info", [address])
-        return state['id'], state['committed']['nonce']
+        state = await self.get_state(address)
+        return state.id, state.get_nonce()
 
-    async def get_tx_receipt(self, address: str):
+    async def get_tx_receipt(self, address: str) -> TransactionDetails:
         return await self.provider.request("tx_info", [address])
 
-    async def get_priority_op_status(self, serial_id: int):
-        return await self.provider.request("ethop_info", [serial_id])
+    async def get_eth_tx_for_withdrawal(self, withdrawal_hash: str) -> str:
+        return await self.provider.request("get_eth_tx_for_withdrawal", [withdrawal_hash])
+
+    async def get_priority_op_status(self, serial_id: int) -> EthOpInfo:
+        data = await self.provider.request("ethop_info", [serial_id])
+        return EthOpInfo(**data)
 
     async def get_transactions_batch_fee(self, tx_types: List[TxType], addresses: List[Address],
-                                         token_like):
+                                         token_like) -> Fee:
 
         return await self.provider.request('get_txs_batch_fee_in_wei',
                                            [[tx_type.value for tx_type in tx_types],
                                             addresses, token_like])
 
-    async def get_transaction_fee(self, tx_type: TxType, address: Address,
-                                  token_like):
+    async def get_transaction_fee(self, tx_type: TxType, address: str,
+                                  token_like: TokenLike) -> Fee:
 
-        return await self.provider.request('get_tx_fee', [tx_type.value, address, token_like])
+        data = await self.provider.request('get_tx_fee', [tx_type.value, address, token_like])
+        return Fee(**data)
+
+    async def get_token_price(self, token: Token) -> Decimal:
+        data = await self.provider.request('get_token_price', [token.symbol])
+        return token.decimal_amount(int(data))

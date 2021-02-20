@@ -3,7 +3,7 @@ from eth_account.signers.base import BaseAccount
 from eth_account.signers.local import LocalAccount
 
 from zksync_sdk import ZkSyncLibrary
-from zksync_sdk.types import ChainId, EncodedTx, TxEthSignature, TxSignature
+from zksync_sdk.types import ChainId, EncodedTx, SignatureType, TxEthSignature, TxSignature
 
 
 class ZkSyncSigner:
@@ -38,4 +38,4 @@ class EthereumSigner:
         message = tx.human_readable_message()
         message = encode_defunct(message.encode())
         signature = self.account.sign_message(message)
-        return TxEthSignature(signature=signature.signature, type="EthereumSignature")
+        return TxEthSignature(signature=signature.signature, type=SignatureType.ethereum_signature)

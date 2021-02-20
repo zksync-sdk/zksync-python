@@ -190,11 +190,6 @@ def serialize_amount_full(amount: int):
     pass
 
 
-# export function serializeAmountFull(amount: BigNumberish): Uint8Array {
-#     const bnAmount = BigNumber.from(amount);
-#     return utils.zeroPad(utils.arrayify(bnAmount), 16);
-# }
-
 def serialize_account_id(account_id: int):
     if account_id < 0:
         raise Exception

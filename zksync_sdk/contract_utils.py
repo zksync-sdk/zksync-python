@@ -18,3 +18,13 @@ def zk_sync_abi():
         abi = json.loads(abi_text)['abi']
 
     return abi
+
+
+def erc20_abi():
+    global abi
+
+    if abi is None:
+        abi_text = pkg_resources.read_text(contract_abi, 'IERC20.json')
+        abi = json.loads(abi_text)['abi']
+
+    return abi
