@@ -10,14 +10,14 @@ from zksync_sdk.ethereum_provider import EthereumProvider
 from zksync_sdk.network import rinkeby
 from zksync_sdk.providers.http import HttpJsonRPCProvider
 from zksync_sdk.signer import EthereumSigner, ZkSyncSigner
-from zksync_sdk.types import Token
+from zksync_sdk.types import ChangePubKeyTypes, Token
 from zksync_sdk.wallet import Wallet
 from zksync_sdk.zksync import ZkSync
 from zksync_sdk.zksync_provider import ZkSyncProvider
 
 
 class TestWallet(IsolatedAsyncioTestCase):
-    private_key = "0x53c833656351c686dc66d2454b48665554212f4fa71db4f07d59c3be87d894dd"
+    private_key = "0xcfcf55abae35cfd18caeb3975688d3dcb4834dac21d9c03ca0b670a00028df4c"
 
     def setUp(self) -> None:
         self.account = Account.from_key(self.private_key)
@@ -49,6 +49,10 @@ class TestWallet(IsolatedAsyncioTestCase):
     async def test_deposit(self):
         await self.wallet.ethereum_provider.deposit(Token.eth(), Decimal(0.001),
                                                     self.account.address)
+
+    async def test_change_pubkey(self):
+        res = await self.wallet.set_signing_key("ETH", ChangePubKeyTypes.ecdsa)
+        print(res)
 
     async def test_is_public_key_onset(self):
         account, nonce = await self.wallet.zk_provider.get_account_nonce(self.account.address)

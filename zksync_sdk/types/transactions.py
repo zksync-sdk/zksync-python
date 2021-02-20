@@ -1,7 +1,8 @@
 import abc
 from dataclasses import dataclass
 from decimal import Decimal
-from typing import List, Optional
+from enum import Enum
+from typing import Dict, List, Optional
 
 from pydantic import BaseModel
 
@@ -12,6 +13,12 @@ from zksync_sdk.serialize_utils import (int_to_bytes, packed_amount_checked, pac
 from zksync_sdk.types.signatures import TxEthSignature, TxSignature
 
 DEFAULT_TOKEN_ADDRESS = "0x0000000000000000000000000000000000000000"
+
+
+class ChangePubKeyTypes(Enum):
+    onchain = "Onchain"
+    ecdsa = "ECDSA"
+    create2 = "CREATE2"
 
 
 class Token(BaseModel):
@@ -97,9 +104,10 @@ class ChangePubKey(EncodedTx):
     nonce: int
     valid_from: int
     valid_until: int
-    eth_auth_data: str
+    batch_hash: bytes = b"\x00" * 32
+    eth_auth_data: Dict = None
     eth_signature: TxEthSignature = None
-    zk_sync_signature: TxSignature = None
+    signature: TxSignature = None
 
     def human_readable_message(self) -> str:
         message = f"Set signing key: {self.new_pk_hash.replace('sync:', '').lower()}"
@@ -120,19 +128,27 @@ class ChangePubKey(EncodedTx):
             serialize_timestamp(self.valid_until)
         ])
 
+    def get_eth_tx_bytes(self) -> bytes:
+        return b"".join([
+            serialize_address(self.new_pk_hash),
+            serialize_nonce(self.nonce),
+            serialize_account_id(self.account_id),
+            self.batch_hash,
+        ])
+
     def dict(self):
         return {
-            "type":       "ChangePubKey",
-            "accountId":  self.account_id,
-            "account":    self.account,
-            "newPkHash":  self.new_pk_hash,
-            "fee_token":  self.token.id,
-            "fee":        self.fee,
-            "nonce":      self.nonce,
-            "signature":  self.signature.dict(),
-            "amount":     self.amount,
-            "validFrom":  self.valid_from,
-            "validUntil": self.valid_until,
+            "type":        "ChangePubKey",
+            "accountId":   self.account_id,
+            "account":     self.account,
+            "newPkHash":   self.new_pk_hash,
+            "fee_token":   self.token.id,
+            "fee":         self.fee,
+            "nonce":       self.nonce,
+            "ethAuthData": self.eth_auth_data,
+            "signature":   self.signature.dict(),
+            "validFrom":   self.valid_from,
+            "validUntil":  self.valid_until,
         }
 
     @classmethod

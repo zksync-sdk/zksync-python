@@ -24,7 +24,18 @@ class TxType(Enum):
     withdraw = "Withdraw"
     transfer = "Transfer"
     fast_withdraw = "FastWithdraw"
-    change_pub_key = "ChangePubKeyOnchainAuth"
+    change_pub_key_onchain = {"ChangePubKey": "Onchain"}
+    change_pub_key_ecdsa = {"ChangePubKey": "ECDSA"}
+
+
+class ZkSyncProviderError(Exception):
+    pass
+
+
+class AccountDoesNotExist(ZkSyncProviderError):
+    def __init__(self, address, *args):
+        self.address = address
+        super().__init__(*args)
 
 
 class ZkSyncProvider:
@@ -59,6 +70,8 @@ class ZkSyncProvider:
 
     async def get_state(self, address: str) -> AccountState:
         data = await self.provider.request("account_info", [address])
+        if data is None:
+            raise AccountDoesNotExist(address=address)
         return AccountState(**data)
 
     async def get_confirmations_for_eth_op_amount(self) -> int:

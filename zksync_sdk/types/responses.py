@@ -1,4 +1,4 @@
-from typing import Dict, Optional
+from typing import Any, Dict, Optional
 
 from pydantic import BaseModel
 
@@ -44,7 +44,7 @@ class AccountState(BaseModel):
 
 
 class Fee(BaseModel):
-    fee_type: str
+    fee_type: Any
     gas_tx_amount: int
     gas_price_wei: int
     gas_fee: int

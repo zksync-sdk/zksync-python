@@ -19,7 +19,7 @@ class HttpJsonRPCProvider(JsonRPCProvider):
                 result = response.json()
                 if "error" in result:
                     data = result["error"]
-                    raise ResponseError(data['id'], data['message'])
+                    raise ResponseError(data['code'], data['message'])
                 else:
                     return result['result']
             else:

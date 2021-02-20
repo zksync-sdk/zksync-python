@@ -9,11 +9,13 @@ class ProviderError(Exception):
 
 
 class ResponseError(Exception):
-    def __init__(self, id, text, *args):
-        self.id = id
+    def __init__(self, code, text, *args):
+        self.code = code
         self.text = text
         super().__init__(*args)
 
+    def __str__(self):
+        return f"Response error with code {self.code} \n {self.text}"
 
 class JsonRPCProvider(ABC):
     @abstractmethod

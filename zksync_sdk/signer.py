@@ -1,6 +1,5 @@
 from eth_account.messages import encode_defunct
 from eth_account.signers.base import BaseAccount
-from eth_account.signers.local import LocalAccount
 
 from zksync_sdk import ZkSyncLibrary
 from zksync_sdk.types import ChainId, EncodedTx, SignatureType, TxEthSignature, TxSignature
@@ -15,6 +14,9 @@ class ZkSyncSigner:
         self.public_key = self.library.get_public_key(self.private_key)
         self.account = account
         self.chain_id = chain_id
+
+    def pubkey_hash(self):
+        return f"sync:{self.library.get_pubkey_hash(self.public_key).hex()}"
 
     def derive_private_key(self, account: BaseAccount, chain_id: ChainId):
         message = self.MESSAGE
@@ -34,8 +36,10 @@ class EthereumSigner:
     def __init__(self, account: BaseAccount):
         self.account = account
 
-    def sign(self, tx: EncodedTx) -> TxEthSignature:
+    def sign_tx(self, tx: EncodedTx) -> TxEthSignature:
         message = tx.human_readable_message()
-        message = encode_defunct(message.encode())
-        signature = self.account.sign_message(message)
+        return self.sign(message.encode())
+
+    def sign(self, message: bytes):
+        signature = self.account.sign_message(encode_defunct(message))
         return TxEthSignature(signature=signature.signature, type=SignatureType.ethereum_signature)

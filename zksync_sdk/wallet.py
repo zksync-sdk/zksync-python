@@ -2,7 +2,9 @@ from decimal import Decimal
 
 from zksync_sdk.ethereum_provider import EthereumProvider
 from zksync_sdk.signer import EthereumSigner, ZkSyncSigner
-from zksync_sdk.types import (EncodedTx, ForcedExit, Token, TokenLike, Tokens, Transfer,
+from zksync_sdk.types import (ChangePubKey, ChangePubKeyTypes, EncodedTx, ForcedExit, Token,
+                              TokenLike, Tokens,
+                              Transfer,
                               TxEthSignature, Withdraw, )
 from zksync_sdk.zksync_provider import TxType, ZkSyncProvider
 
@@ -28,9 +30,60 @@ class Wallet:
                                       fast_processing: bool) -> str:
         return await self.zk_provider.submit_tx(tx, eth_signature, fast_processing)
 
-    async def change_pub_key(self, onchain_auth: bool, nonce: int = None,
-                             fast_processing: bool = False):
-        raise NotImplementedError
+    async def set_signing_key(self, fee_token: TokenLike, eth_auth_type: ChangePubKeyTypes,
+                              fee: Decimal = None, nonce: int = None, batch_hash: bytes = None,
+                              fast_processing=False):
+
+        account_id, new_nonce = await self.zk_provider.get_account_nonce(self.address())
+        nonce = nonce or new_nonce
+        token = await self.resolve_token(fee_token)
+        if fee is None:
+            if eth_auth_type == ChangePubKeyTypes.ecdsa:
+                fee = await self.zk_provider.get_transaction_fee(TxType.change_pub_key_ecdsa,
+                                                                 self.address(),
+                                                                 fee_token)
+            elif eth_auth_type == ChangePubKeyTypes.onchain:
+                fee = await self.zk_provider.get_transaction_fee(TxType.change_pub_key_onchain,
+                                                                 self.address(),
+                                                                 fee_token)
+            else:
+                raise NotImplementedError
+
+            fee = fee.total_fee
+        else:
+            fee = token.from_decimal(fee)
+
+        new_pubkey_hash = self.zk_signer.pubkey_hash()
+        change_pub_key = ChangePubKey(
+            account=self.address(),
+            account_id=account_id,
+            new_pk_hash=new_pubkey_hash,
+            token=token,
+            fee=fee,
+            nonce=nonce,
+            valid_until=2 ** 31,
+            valid_from=0,
+        )
+        if batch_hash is not None:
+            change_pub_key.batch_hash = batch_hash
+
+        if eth_auth_type == ChangePubKeyTypes.onchain:
+            eth_auth_data = {"type": "Onchain"}
+            eth_signature = self.eth_signer.sign(change_pub_key.get_eth_tx_bytes())
+
+        elif eth_auth_type == ChangePubKeyTypes.ecdsa:
+            eth_signature = self.eth_signer.sign(change_pub_key.get_eth_tx_bytes())
+            eth_auth_data = {"type":         "ECDSA",
+                             "ethSignature": eth_signature.signature,
+                             "batchHash":    f"0x{change_pub_key.batch_hash.hex()}"}
+        else:
+            raise NotImplementedError
+
+        change_pub_key.eth_auth_data = eth_auth_data
+        zk_signature = self.zk_signer.sign_tx(change_pub_key)
+        change_pub_key.signature = zk_signature
+
+        return await self.send_signed_transaction(change_pub_key, eth_signature, fast_processing)
 
     async def forced_exit(self, target: str, token: TokenLike, fee: Decimal = None,
                           fast_processing: bool = False) -> str:
@@ -48,7 +101,7 @@ class Wallet:
                               valid_from=0,
                               valid_until=2 ** 31,
                               token=token)
-        eth_signature = self.eth_signer.sign(transfer)
+        eth_signature = self.eth_signer.sign_tx(transfer)
         zk_signature = self.zk_signer.sign_tx(transfer)
         transfer.signature = zk_signature
         return await self.send_signed_transaction(transfer, eth_signature, fast_processing)
@@ -72,7 +125,7 @@ class Wallet:
                             valid_from=0,
                             valid_until=2 ** 31,
                             token=token)
-        eth_signature = self.eth_signer.sign(transfer)
+        eth_signature = self.eth_signer.sign_tx(transfer)
         zk_signature = self.zk_signer.sign_tx(transfer)
         transfer.signature = zk_signature
         return await self.send_signed_transaction(transfer, eth_signature, fast_processing)
@@ -94,7 +147,7 @@ class Wallet:
                             valid_from=0,
                             valid_until=2 ** 31,
                             token=token)
-        eth_signature = self.eth_signer.sign(transfer)
+        eth_signature = self.eth_signer.sign_tx(transfer)
         zk_signature = self.zk_signer.sign_tx(transfer)
         transfer.signature = zk_signature
         return await self.send_signed_transaction(transfer, eth_signature, fast)
