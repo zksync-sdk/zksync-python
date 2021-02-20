@@ -5,7 +5,7 @@ from zksync_sdk.contract_utils import erc20_abi, zk_sync_abi
 from zksync_sdk.network import Network
 
 MAX_ERC20_APPROVE_AMOUNT = 115792089237316195423570985008687907853269984665640564039457584007913129639935
-ERC20_APPROVE_TRESHOLD = 57896044618658097711785492504343953926634992332820282019728792003956564819968
+ERC20_APPROVE_THRESHOLD = 57896044618658097711785492504343953926634992332820282019728792003956564819968
 
 
 class Contract:
@@ -60,10 +60,11 @@ class ERC20Contract(Contract):
         super().__init__(contract_address, web3, account, erc20_abi())
 
     def approve_deposit(self, max_erc20_approve_amount=MAX_ERC20_APPROVE_AMOUNT):
-        return self._call_method("approve", self.zksync_address,
-                                 max_erc20_approve_amount)
+        return self.contract.functions.approve(self.zksync_address,
+                                               max_erc20_approve_amount).call()
 
-    def is_deposit_approved(self, erc20_approve_threshold=ERC20_APPROVE_TRESHOLD):
-        allowance = self._call_method("allowance", self.account.address,
-                                      self.zksync_address)
+    def is_deposit_approved(self, erc20_approve_threshold=ERC20_APPROVE_THRESHOLD):
+        allowance = self.contract.functions.allowance(self.account.address,
+                                                      self.zksync_address).call()
+
         return allowance >= erc20_approve_threshold

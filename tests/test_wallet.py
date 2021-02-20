@@ -98,12 +98,16 @@ class TestEthereumProvider(IsolatedAsyncioTestCase):
         token = Token(address=Web3.toChecksumAddress('0xfe1b6abc39e46cec54d275efb4b29b33be176c2a'),
                       id=20, symbol='PHNX',
                       decimals=18)
-        data = await self.ethereum_provider.approve_deposit(token, 10)
-        print(data)
+        assert await self.ethereum_provider.approve_deposit(token, 10)
 
     async def test_full_exit(self):
         token = Token(address=Web3.toChecksumAddress('0xfe1b6abc39e46cec54d275efb4b29b33be176c2a'),
                       id=20, symbol='PHNX',
                       decimals=18)
-        data = await self.ethereum_provider.full_exit(token, 6713)
-        print(data)
+        assert await self.ethereum_provider.full_exit(token, 6713)
+
+    async def test_is_deposit_approved(self):
+        token = Token(address=Web3.toChecksumAddress('0xfe1b6abc39e46cec54d275efb4b29b33be176c2a'),
+                      id=20, symbol='PHNX',
+                      decimals=18)
+        assert await self.ethereum_provider.is_deposit_approved(token, 10)
