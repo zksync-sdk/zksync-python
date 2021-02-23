@@ -1,47 +1,18 @@
 from decimal import Decimal
-from enum import Enum
 from typing import List, Optional, Tuple, Union
 
 from eth_typing import Address
 
-from zksync_sdk.providers import JsonRPCProvider
 from zksync_sdk.types import (AccountState, ContractAddress, EncodedTx, EthOpInfo, Fee,
-                              SignatureType, Token, TokenLike, Tokens, TransactionDetails,
+                              Token, TokenLike, Tokens, TransactionDetails,
                               TxEthSignature, )
+from zksync_sdk.zksync_provider.interface import ZkSyncProviderInterface
+from zksync_sdk.zksync_provider.types import AccountDoesNotExist, EthSignature, Transaction, TxType
+
+__all__ = ['ZkSyncProviderV01']
 
 
-class Transaction:
-    tx: EncodedTx
-    signature: bytes
-
-
-class EthSignature:
-    type: SignatureType
-    signature: str
-
-
-class TxType(Enum):
-    withdraw = "Withdraw"
-    transfer = "Transfer"
-    fast_withdraw = "FastWithdraw"
-    change_pub_key_onchain = {"ChangePubKey": "Onchain"}
-    change_pub_key_ecdsa = {"ChangePubKey": "ECDSA"}
-
-
-class ZkSyncProviderError(Exception):
-    pass
-
-
-class AccountDoesNotExist(ZkSyncProviderError):
-    def __init__(self, address, *args):
-        self.address = address
-        super().__init__(*args)
-
-
-class ZkSyncProvider:
-    def __init__(self, provider: JsonRPCProvider):
-        self.provider = provider
-
+class ZkSyncProviderV01(ZkSyncProviderInterface):
     async def submit_tx(self, tx: EncodedTx, signature: Optional[TxEthSignature],
                         fast_processing: bool = False) -> str:
         signature = signature.dict() if signature is not None else None
@@ -106,4 +77,4 @@ class ZkSyncProvider:
 
     async def get_token_price(self, token: Token) -> Decimal:
         data = await self.provider.request('get_token_price', [token.symbol])
-        return token.decimal_amount(int(data))
+        return Decimal(data)

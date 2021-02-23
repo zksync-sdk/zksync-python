@@ -2,17 +2,19 @@ import abc
 from dataclasses import dataclass
 from decimal import Decimal
 from enum import Enum
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Union
 
 from pydantic import BaseModel
 
-from zksync_sdk.serialize_utils import (int_to_bytes, packed_amount_checked, packed_fee_checked,
-                                        serialize_account_id,
-                                        serialize_address, serialize_nonce, serialize_timestamp,
-                                        serialize_token_id, )
+from zksync_sdk.serializers import (int_to_bytes, packed_amount_checked, packed_fee_checked,
+                                    serialize_account_id,
+                                    serialize_address, serialize_nonce, serialize_timestamp,
+                                    serialize_token_id, )
 from zksync_sdk.types.signatures import TxEthSignature, TxSignature
 
 DEFAULT_TOKEN_ADDRESS = "0x0000000000000000000000000000000000000000"
+
+TokenLike = Union[str, int]
 
 
 class ChangePubKeyTypes(Enum):
@@ -74,6 +76,17 @@ class Tokens(BaseModel):
             return found_token[0]
         else:
             return None
+
+    def find(self, token: TokenLike) -> Token:
+        result = None
+        if isinstance(token, int):
+            result = self.find_by_id(token)
+
+        if isinstance(token, str):
+            result = self.find_by_address(address=token)
+            if result is None:
+                result = self.find_by_symbol(symbol=token)
+        return result
 
 
 class EncodedTx(abc.ABC):

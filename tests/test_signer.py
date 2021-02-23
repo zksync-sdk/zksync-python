@@ -5,10 +5,10 @@ from unittest import TestCase
 from eth_account import Account
 
 from zksync_sdk import ZkSyncLibrary
-from zksync_sdk.serialize_utils import (closest_packable_amount, closest_packable_transaction_fee,
-                                        )
-from zksync_sdk.signer import ZkSyncSigner
+from zksync_sdk.serializers import (closest_packable_amount, closest_packable_transaction_fee,
+                                    )
 from zksync_sdk.types import ChainId, ForcedExit, Token, Transfer, Withdraw
+from zksync_sdk.zksync_signer import ZkSyncSigner
 
 PRIVATE_KEY = "0x000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f"
 
@@ -23,7 +23,7 @@ class ZkSyncSignerTest(TestCase):
 
     def test_derive_pub_key(self):
         account = Account.from_key(PRIVATE_KEY)
-        signer = ZkSyncSigner(account, self.library, ChainId.MAINNET)
+        signer = ZkSyncSigner.from_account(account, self.library, ChainId.MAINNET)
         assert signer.public_key.hex() == "17f3708f5e2b2c39c640def0cf0010fd9dd9219650e389114ea9da47f5874184"
 
     def test_transfer_bytes(self):
@@ -64,7 +64,7 @@ class ZkSyncSignerTest(TestCase):
     def test_signature(self):
         account = Account.from_key(PRIVATE_KEY)
         token = Token.eth()
-        signer = ZkSyncSigner(account, self.library, ChainId.MAINNET)
+        signer = ZkSyncSigner.from_account(account, self.library, ChainId.MAINNET)
         tr = Transfer(from_address="0xedE35562d3555e61120a151B3c8e8e91d83a378a",
                       to_address="0x19aa2ed8712072e918632259780e587698ef58df",
                       token=Token.eth(),

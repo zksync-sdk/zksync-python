@@ -1,11 +1,8 @@
 from enum import IntEnum
-from typing import Union
 
 from .responses import *
 from .signatures import *
 from .transactions import *
-
-TokenLike = Union[str, int]
 
 
 class ChainId(IntEnum):

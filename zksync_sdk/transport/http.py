@@ -3,11 +3,11 @@ from typing import List
 
 import httpx
 
-from . import JsonRPCProvider, ProviderError, ResponseError
+from . import JsonRPCTransport, ProviderError, ResponseError
 from ..network import Network
 
 
-class HttpJsonRPCProvider(JsonRPCProvider):
+class HttpJsonRPCTransport(JsonRPCTransport):
     def __init__(self, network: Network):
         self.network = network
 

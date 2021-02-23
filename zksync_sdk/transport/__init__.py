@@ -17,7 +17,8 @@ class ResponseError(Exception):
     def __str__(self):
         return f"Response error with code {self.code} \n {self.text}"
 
-class JsonRPCProvider(ABC):
+
+class JsonRPCTransport(ABC):
     @abstractmethod
     async def request(self, method: str, params: Optional[List]) -> Any:
         pass
