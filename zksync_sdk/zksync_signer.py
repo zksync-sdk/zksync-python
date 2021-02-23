@@ -39,8 +39,11 @@ class ZkSyncSigner:
             private_key=private_key,
         )
 
-    def pubkey_hash(self):
+    def pubkey_hash_str(self):
         return f"sync:{self.library.get_pubkey_hash(self.public_key).hex()}"
+
+    def pubkey_hash(self):
+        return self.library.get_pubkey_hash(self.public_key)
 
     def sign_tx(self, message: EncodedTx) -> TxSignature:
         signature = self.library.sign(self.private_key, message.encoded_message())

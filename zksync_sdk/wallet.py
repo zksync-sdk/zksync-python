@@ -53,7 +53,7 @@ class Wallet:
         else:
             fee = token.from_decimal(fee)
 
-        new_pubkey_hash = self.zk_signer.pubkey_hash()
+        new_pubkey_hash = self.zk_signer.pubkey_hash_str()
         change_pub_key = ChangePubKey(
             account=self.address(),
             account_id=account_id,

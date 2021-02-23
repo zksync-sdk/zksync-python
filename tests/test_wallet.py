@@ -58,7 +58,9 @@ class TestWallet(IsolatedAsyncioTestCase):
         print(res)
 
     async def test_is_public_key_onset(self):
+        pubkey_hash = self.wallet.zk_signer.pubkey_hash()
         account, nonce = await self.wallet.zk_provider.get_account_nonce(self.account.address)
+        await self.wallet.ethereum_provider.set_auth_pubkey_hash(pubkey_hash, nonce)
         assert await self.wallet.ethereum_provider.is_onchain_auth_pubkey_hash_set(nonce)
 
     async def test_transfer(self):
