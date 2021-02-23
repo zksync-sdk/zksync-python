@@ -9,6 +9,9 @@ from zksync_sdk.types import (ChangePubKey, ChangePubKeyTypes, EncodedTx, Forced
 from zksync_sdk.zksync_provider import TxType, ZkSyncProviderInterface
 from zksync_sdk.zksync_signer import ZkSyncSigner
 
+DEFAULT_VALID_FROM = 0
+DEFAULT_VALID_UNTIL = 2 ** 31
+
 
 class WalletError(Exception):
     pass
@@ -32,7 +35,8 @@ class Wallet:
         return await self.zk_provider.submit_tx(tx, eth_signature, fast_processing)
 
     async def set_signing_key(self, fee_token: TokenLike, eth_auth_type: ChangePubKeyTypes,
-                              fee: Decimal = None, nonce: int = None, batch_hash: bytes = None):
+                              fee: Decimal = None, nonce: int = None, batch_hash: bytes = None,
+                              valid_from=DEFAULT_VALID_FROM, valid_until=DEFAULT_VALID_UNTIL):
 
         account_id, new_nonce = await self.zk_provider.get_account_nonce(self.address())
         nonce = nonce or new_nonce
@@ -61,8 +65,8 @@ class Wallet:
             token=token,
             fee=fee,
             nonce=nonce,
-            valid_until=2 ** 31,
-            valid_from=0,
+            valid_until=valid_until,
+            valid_from=valid_from,
         )
         if batch_hash is not None:
             change_pub_key.batch_hash = batch_hash
@@ -85,7 +89,8 @@ class Wallet:
 
         return await self.send_signed_transaction(change_pub_key, eth_signature)
 
-    async def forced_exit(self, target: str, token: TokenLike, fee: Decimal = None) -> str:
+    async def forced_exit(self, target: str, token: TokenLike, fee: Decimal = None,
+                          valid_from=DEFAULT_VALID_FROM, valid_until=DEFAULT_VALID_UNTIL) -> str:
         account_id, nonce = await self.zk_provider.get_account_nonce(self.address())
         token = await self.resolve_token(token)
         if fee is None:
@@ -97,8 +102,8 @@ class Wallet:
                               target=target,
                               fee=fee,
                               nonce=nonce,
-                              valid_from=0,
-                              valid_until=2 ** 31,
+                              valid_from=valid_from,
+                              valid_until=valid_until,
                               token=token)
         eth_signature = self.eth_signer.sign_tx(transfer)
         zk_signature = self.zk_signer.sign_tx(transfer)
@@ -109,7 +114,8 @@ class Wallet:
         return self.eth_signer.address()
 
     async def transfer(self, to: str, amount: Decimal, token: TokenLike,
-                       fee: Decimal = None) -> str:
+                       fee: Decimal = None,
+                       valid_from=DEFAULT_VALID_FROM, valid_until=DEFAULT_VALID_UNTIL) -> str:
         account_id, nonce = await self.zk_provider.get_account_nonce(self.address())
         token = await self.resolve_token(token)
         if fee is None:
@@ -121,8 +127,8 @@ class Wallet:
                             to_address=to,
                             amount=token.from_decimal(amount), fee=fee,
                             nonce=nonce,
-                            valid_from=0,
-                            valid_until=2 ** 31,
+                            valid_from=valid_from,
+                            valid_until=valid_until,
                             token=token)
         eth_signature = self.eth_signer.sign_tx(transfer)
         zk_signature = self.zk_signer.sign_tx(transfer)
@@ -130,7 +136,8 @@ class Wallet:
         return await self.send_signed_transaction(transfer, eth_signature)
 
     async def withdraw(self, eth_address: str, amount: Decimal, token: TokenLike,
-                       fee: Decimal = None, fast: bool = False) -> str:
+                       fee: Decimal = None, fast: bool = False,
+                       valid_from=DEFAULT_VALID_FROM, valid_until=DEFAULT_VALID_UNTIL) -> str:
         account_id, nonce = await self.zk_provider.get_account_nonce(self.address())
         token = await self.resolve_token(token)
         if fee is None:
@@ -143,8 +150,8 @@ class Wallet:
                             to_address=eth_address,
                             amount=token.from_decimal(amount), fee=fee,
                             nonce=nonce,
-                            valid_from=0,
-                            valid_until=2 ** 31,
+                            valid_from=valid_from,
+                            valid_until=valid_until,
                             token=token)
         eth_signature = self.eth_signer.sign_tx(transfer)
         zk_signature = self.zk_signer.sign_tx(transfer)
