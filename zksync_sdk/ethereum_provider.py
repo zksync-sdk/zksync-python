@@ -25,7 +25,7 @@ class EthereumProvider:
             self.zksync.deposit_erc20(token.address, address, token.from_decimal(amount))
 
     async def full_exit(self, token: Token, account_id: int):
-        return self.zksync.full_exit(account_id, token.address, )
+        return self.zksync.full_exit(account_id, token.address)
 
     async def set_auth_pubkey_hash(self, pubkey_hash: bytes, nonce: int):
         return self.zksync.set_auth_pub_key_hash(pubkey_hash, nonce)

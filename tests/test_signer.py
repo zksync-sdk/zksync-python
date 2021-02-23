@@ -1,4 +1,3 @@
-from decimal import Decimal
 from unittest import TestCase
 
 from eth_account import Account
@@ -19,7 +18,7 @@ class ZkSyncSignerTest(TestCase):
     def test_derive_pub_key(self):
         account = Account.from_key(PRIVATE_KEY)
         signer = ZkSyncSigner.from_account(account, self.library, ChainId.MAINNET)
-        assert signer.public_key.hex() == "17f3708f5e2b2c39c640def0cf0010fd9dd9219650e389114ea9da47f5874184"
+        assert signer.public_key.hex() == "40771354dc314593e071eaf4d0f42ccb1fad6c7006c57464feeb7ab5872b7490"
 
     def test_transfer_bytes(self):
         tr = Transfer(from_address="0xedE35562d3555e61120a151B3c8e8e91d83a378a",
@@ -58,18 +57,17 @@ class ZkSyncSignerTest(TestCase):
 
     def test_signature(self):
         account = Account.from_key(PRIVATE_KEY)
-        token = Token.eth()
         signer = ZkSyncSigner.from_account(account, self.library, ChainId.MAINNET)
         tr = Transfer(from_address="0xedE35562d3555e61120a151B3c8e8e91d83a378a",
                       to_address="0x19aa2ed8712072e918632259780e587698ef58df",
                       token=Token.eth(),
-                      amount=token.from_decimal(Decimal(1000000000000)),
-                      fee=token.from_decimal(Decimal(1000000)),
+                      amount=1000000000000,
+                      fee=1000000,
                       nonce=12,
                       valid_from=0,
                       valid_until=4294967295, account_id=44)
         res = signer.sign_tx(tr)
-        assert res.signature.encode().hex() == 'c4f22a4dd8e9d7978944bfa166f7e09599fbcd3dcc4c2849cbf497e0d1f1eba64830b792d6eccee471f571cf208d6ad6a6d7ed663581f8d724068bc801e42800'
+        assert res.signature == '849281ea1b3a97b3fe30fbd25184db3e7860db96e3be9d53cf643bd5cf7805a30dbf685c1e63fd75968a61bd83d3a1fb3a0b1c68c71fe87d96f1c1cb7de45b05'
 
 
 def check_bytes(a, b):
