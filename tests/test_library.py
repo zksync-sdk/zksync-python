@@ -6,11 +6,7 @@ from zksync_sdk import ZkSyncLibrary
 
 class TestZkSyncLibrary(TestCase):
     def setUp(self):
-        _DIRNAME = os.path.dirname(__file__)
-
-        path = os.path.join(_DIRNAME, '../zks-crypto-macos-x64.dylib')
-
-        self.library = ZkSyncLibrary(path)
+        self.library = ZkSyncLibrary()
 
     def test_public_key_hash_from_seed(self):
         seed = b"1" * 32

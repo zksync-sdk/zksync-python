@@ -1,5 +1,4 @@
 from decimal import Decimal
-import os
 from unittest import IsolatedAsyncioTestCase
 
 from eth_account import Account
@@ -22,11 +21,7 @@ class TestWallet(IsolatedAsyncioTestCase):
 
     async def asyncSetUp(self) -> None:
         self.account = Account.from_key(self.private_key)
-        _DIRNAME = os.path.dirname(__file__)
-
-        path = os.path.join(_DIRNAME, '../zks-crypto-macos-x64.dylib')
-
-        self.library = ZkSyncLibrary(path)
+        self.library = ZkSyncLibrary()
 
         w3 = Web3(
             HTTPProvider(
@@ -89,11 +84,7 @@ class TestEthereumProvider(IsolatedAsyncioTestCase):
 
     async def asyncSetUp(self) -> None:
         self.account = Account.from_key(self.private_key)
-        _DIRNAME = os.path.dirname(__file__)
-
-        path = os.path.join(_DIRNAME, '../zks-crypto-macos-x64.dylib')
-
-        self.library = ZkSyncLibrary(path)
+        self.library = ZkSyncLibrary()
 
         w3 = Web3(HTTPProvider(
             endpoint_uri="https://rinkeby.infura.io/v3/bcf42e619a704151a1b0d95a35cb2e62"))

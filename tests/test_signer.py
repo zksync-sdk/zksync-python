@@ -1,5 +1,4 @@
 from decimal import Decimal
-import os
 from unittest import TestCase
 
 from eth_account import Account
@@ -15,11 +14,7 @@ PRIVATE_KEY = "0x000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1
 
 class ZkSyncSignerTest(TestCase):
     def setUp(self):
-        _DIRNAME = os.path.dirname(__file__)
-
-        path = os.path.join(_DIRNAME, '../zks-crypto-macos-x64.dylib')
-
-        self.library = ZkSyncLibrary(path)
+        self.library = ZkSyncLibrary()
 
     def test_derive_pub_key(self):
         account = Account.from_key(PRIVATE_KEY)
