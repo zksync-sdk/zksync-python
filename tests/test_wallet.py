@@ -45,7 +45,10 @@ class TestWallet(IsolatedAsyncioTestCase):
         assert data.address.lower() == self.account.address.lower()
 
     async def test_deposit(self):
-        await self.wallet.ethereum_provider.deposit(Token.eth(), Decimal(0.001),
+        token = await self.wallet.resolve_token("USDC")
+        await self.wallet.ethereum_provider.approve_deposit(token, Decimal(10))
+
+        await self.wallet.ethereum_provider.deposit(token, Decimal(10),
                                                     self.account.address)
 
     async def test_change_pubkey(self):

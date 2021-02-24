@@ -59,8 +59,8 @@ class ERC20Contract(Contract):
         super().__init__(contract_address, web3, account, erc20_abi())
 
     def approve_deposit(self, max_erc20_approve_amount=MAX_ERC20_APPROVE_AMOUNT):
-        return self.contract.functions.approve(self.zksync_address,
-                                               max_erc20_approve_amount).call()
+        return self._call_method('approve', self.zksync_address,
+                                 max_erc20_approve_amount)
 
     def is_deposit_approved(self, erc20_approve_threshold=ERC20_APPROVE_THRESHOLD):
         allowance = self.contract.functions.allowance(self.account.address,

@@ -2,6 +2,7 @@ from decimal import Decimal
 from typing import List, Optional, Tuple, Union
 
 from eth_typing import Address
+from web3 import Web3
 
 from zksync_sdk.types import (AccountState, ContractAddress, EncodedTx, EthOpInfo, Fee,
                               Token, TokenLike, Tokens, TransactionDetails,
@@ -21,7 +22,11 @@ class ZkSyncProviderV01(ZkSyncProviderInterface):
 
     async def get_tokens(self) -> Tokens:
         data = await self.provider.request("tokens", None)
-        tokens = [Token(**token) for token in data.values()]
+        tokens = [Token(address=Web3.toChecksumAddress(token['address']),
+                        id=token['id'],
+                        symbol=token['symbol'],
+                        decimals=token['decimals']
+                        ) for token in data.values()]
         return Tokens(tokens=tokens)
 
     async def submit_txs_batch(self, transactions: List[Transaction],
