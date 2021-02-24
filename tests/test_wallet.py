@@ -48,12 +48,12 @@ class TestWallet(IsolatedAsyncioTestCase):
         token = await self.wallet.resolve_token("USDT")
         await self.wallet.ethereum_provider.approve_deposit(token, Decimal(10))
 
-        await self.wallet.ethereum_provider.deposit(token, Decimal(10),
-                                                    self.account.address)
+        assert await self.wallet.ethereum_provider.deposit(token, Decimal(10),
+                                                           self.account.address)
 
     async def test_change_pubkey(self):
         res = await self.wallet.set_signing_key("ETH", ChangePubKeyTypes.ecdsa)
-        print(res)
+        assert res
 
     async def test_is_public_key_onset(self):
         pubkey_hash = self.wallet.zk_signer.pubkey_hash()
@@ -67,7 +67,8 @@ class TestWallet(IsolatedAsyncioTestCase):
         assert tr
 
     async def test_forced_exit(self):
-        tr = await self.wallet.forced_exit("0x21dDF51966f2A66D03998B0956fe59da1b3a179F", "USDC")
+        tr = await self.wallet.forced_exit("0x21dDF51966f2A66D03998B0956fe59da1b3a179F",
+                                           "USDC")
 
         assert tr
 
@@ -84,46 +85,47 @@ class TestWallet(IsolatedAsyncioTestCase):
     async def test_is_signing_key_set(self):
         assert await self.wallet.is_signing_key_set()
 
+    class TestEthereumProvider(IsolatedAsyncioTestCase):
+        private_key = "0x53c833656351c686dc66d2454b48665554212f4fa71db4f07d59c3be87d894dd"
 
-class TestEthereumProvider(IsolatedAsyncioTestCase):
-    private_key = "0x53c833656351c686dc66d2454b48665554212f4fa71db4f07d59c3be87d894dd"
+        async def asyncSetUp(self) -> None:
+            self.account = Account.from_key(self.private_key)
+            self.library = ZkSyncLibrary()
 
-    async def asyncSetUp(self) -> None:
-        self.account = Account.from_key(self.private_key)
-        self.library = ZkSyncLibrary()
+            w3 = Web3(HTTPProvider(
+                endpoint_uri="https://rinkeby.infura.io/v3/bcf42e619a704151a1b0d95a35cb2e62"))
+            provider = ZkSyncProviderV01(provider=HttpJsonRPCTransport(network=rinkeby))
+            address = await provider.get_contract_address()
+            self.zksync = ZkSync(account=self.account, web3=w3,
+                                 zksync_contract_address=address.main_contract)
+            self.ethereum_provider = EthereumProvider(w3, self.zksync)
 
-        w3 = Web3(HTTPProvider(
-            endpoint_uri="https://rinkeby.infura.io/v3/bcf42e619a704151a1b0d95a35cb2e62"))
-        provider = ZkSyncProviderV01(provider=HttpJsonRPCTransport(network=rinkeby))
-        address = await provider.get_contract_address()
-        self.zksync = ZkSync(account=self.account, web3=w3,
-                             zksync_contract_address=address.main_contract)
-        self.ethereum_provider = EthereumProvider(w3, self.zksync)
+        async def test_approve_deposit(self):
+            token = Token(
+                address=Web3.toChecksumAddress('0xfe1b6abc39e46cec54d275efb4b29b33be176c2a'),
+                id=20, symbol='PHNX',
+                decimals=18)
+            assert await self.ethereum_provider.approve_deposit(token, Decimal(10))
 
-    async def test_approve_deposit(self):
-        token = Token(address=Web3.toChecksumAddress('0xfe1b6abc39e46cec54d275efb4b29b33be176c2a'),
-                      id=20, symbol='PHNX',
-                      decimals=18)
-        assert await self.ethereum_provider.approve_deposit(token, Decimal(10))
+        async def test_full_exit(self):
+            token = Token(
+                address=Web3.toChecksumAddress('0xfe1b6abc39e46cec54d275efb4b29b33be176c2a'),
+                id=20, symbol='PHNX',
+                decimals=18)
+            assert await self.ethereum_provider.full_exit(token, 6713)
 
-    async def test_full_exit(self):
-        token = Token(address=Web3.toChecksumAddress('0xfe1b6abc39e46cec54d275efb4b29b33be176c2a'),
-                      id=20, symbol='PHNX',
-                      decimals=18)
-        assert await self.ethereum_provider.full_exit(token, 6713)
+        async def test_is_deposit_approved(self):
+            token = Token(
+                address=Web3.toChecksumAddress('0xfe1b6abc39e46cec54d275efb4b29b33be176c2a'),
+                id=20, symbol='PHNX',
+                decimals=18)
+            assert await self.ethereum_provider.is_deposit_approved(token, 10)
 
-    async def test_is_deposit_approved(self):
-        token = Token(address=Web3.toChecksumAddress('0xfe1b6abc39e46cec54d275efb4b29b33be176c2a'),
-                      id=20, symbol='PHNX',
-                      decimals=18)
-        assert await self.ethereum_provider.is_deposit_approved(token, 10)
+    class TestZkSyncProvider(IsolatedAsyncioTestCase):
+        def setUp(self) -> None:
+            self.provider = ZkSyncProviderV01(provider=HttpJsonRPCTransport(network=rinkeby))
 
-
-class TestZkSyncProvider(IsolatedAsyncioTestCase):
-    def setUp(self) -> None:
-        self.provider = ZkSyncProviderV01(provider=HttpJsonRPCTransport(network=rinkeby))
-
-    async def test_get_token_price(self):
-        tokens = await self.provider.get_tokens()
-        price = await self.provider.get_token_price(tokens.find_by_symbol("USDC"))
-        self.assertAlmostEqual(float(price), 1.0, delta=0.2)
+        async def test_get_token_price(self):
+            tokens = await self.provider.get_tokens()
+            price = await self.provider.get_token_price(tokens.find_by_symbol("USDC"))
+            self.assertAlmostEqual(float(price), 1.0, delta=0.2)

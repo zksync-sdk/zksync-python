@@ -21,11 +21,6 @@ class TestZkSyncContract(TestCase):
         tx = self.zksync.deposit_eth(self.account.address, 2 * 10 ** 15)
         assert tx['transactionHash']
 
-    def test_deposit_erc20(self):
-        tx = self.zksync.deposit_erc20("0xeb8f08a975Ab53E34D8a0330E0D34de942C95926",
-                                       self.account.address, 2 * 10 ** 15)
-        assert tx['transactionHash']
-
     def test_full_exit(self):
         tx = self.zksync.full_exit(1, "0xfe1b6ABc39E46cEc54d275efB4b29B33be176c2A")
         assert tx['transactionHash']
