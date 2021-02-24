@@ -22,10 +22,9 @@ class Contract:
         transaction = getattr(self.contract.functions, method_name)(
             *args,
             **kwargs
-        ).buildTransaction()
+        ).buildTransaction(params)
 
         transaction.update({'nonce': self.web3.eth.getTransactionCount(self.account.address)})
-        transaction.update(params)
         signed_tx = self.account.sign_transaction(transaction)
         txn_hash = self.web3.eth.sendRawTransaction(signed_tx.rawTransaction)
         txn_receipt = self.web3.eth.waitForTransactionReceipt(txn_hash)
@@ -59,8 +58,7 @@ class ERC20Contract(Contract):
         super().__init__(contract_address, web3, account, erc20_abi())
 
     def approve_deposit(self, max_erc20_approve_amount=MAX_ERC20_APPROVE_AMOUNT):
-        return self._call_method('approve', self.zksync_address,
-                                 max_erc20_approve_amount)
+        return self._call_method('approve', self.zksync_address, max_erc20_approve_amount)
 
     def is_deposit_approved(self, erc20_approve_threshold=ERC20_APPROVE_THRESHOLD):
         allowance = self.contract.functions.allowance(self.account.address,

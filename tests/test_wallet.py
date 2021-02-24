@@ -45,7 +45,7 @@ class TestWallet(IsolatedAsyncioTestCase):
         assert data.address.lower() == self.account.address.lower()
 
     async def test_deposit(self):
-        token = await self.wallet.resolve_token("USDC")
+        token = await self.wallet.resolve_token("USDT")
         await self.wallet.ethereum_provider.approve_deposit(token, Decimal(10))
 
         await self.wallet.ethereum_provider.deposit(token, Decimal(10),
@@ -104,7 +104,7 @@ class TestEthereumProvider(IsolatedAsyncioTestCase):
         token = Token(address=Web3.toChecksumAddress('0xfe1b6abc39e46cec54d275efb4b29b33be176c2a'),
                       id=20, symbol='PHNX',
                       decimals=18)
-        assert await self.ethereum_provider.approve_deposit(token, 10)
+        assert await self.ethereum_provider.approve_deposit(token, Decimal(10))
 
     async def test_full_exit(self):
         token = Token(address=Web3.toChecksumAddress('0xfe1b6abc39e46cec54d275efb4b29b33be176c2a'),
