@@ -31,10 +31,10 @@ class State(BaseModel):
 
 class AccountState(BaseModel):
     address: str
-    id: int
-    depositing: Depositing
-    committed: State
-    verified: State
+    id: Optional[int]
+    depositing: Optional[Depositing]
+    committed: Optional[State]
+    verified: Optional[State]
 
     class Config:
         alias_generator = to_camel

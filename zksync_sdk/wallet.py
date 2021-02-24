@@ -170,6 +170,12 @@ class Wallet:
             token_balance = 0
         return token_balance
 
+    async def is_signing_key_set(self) -> bool:
+        account_state = await self.zk_provider.get_state(self.address())
+        signer_pub_key_hash = self.zk_signer.pubkey_hash_str()
+        return account_state.id is not None and\
+               account_state.committed.pub_key_hash == signer_pub_key_hash
+
     async def resolve_token(self, token: TokenLike) -> Token:
         resolved_token = self.tokens.find(token)
         if resolved_token is not None:

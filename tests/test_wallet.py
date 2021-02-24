@@ -78,6 +78,9 @@ class TestWallet(IsolatedAsyncioTestCase):
         tokens = await self.wallet.zk_provider.get_tokens()
         assert tokens.find_by_symbol("ETH")
 
+    async def test_is_signing_key_set(self):
+        assert await self.wallet.is_signing_key_set()
+
 
 class TestEthereumProvider(IsolatedAsyncioTestCase):
     private_key = "0x53c833656351c686dc66d2454b48665554212f4fa71db4f07d59c3be87d894dd"
