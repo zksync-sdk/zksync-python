@@ -7,8 +7,9 @@ from web3 import Web3
 from zksync_sdk.types import (AccountState, ContractAddress, EncodedTx, EthOpInfo, Fee,
                               Token, TokenLike, Tokens, TransactionDetails,
                               TxEthSignature, )
+from zksync_sdk.zksync_provider.error import AccountDoesNotExist
 from zksync_sdk.zksync_provider.interface import ZkSyncProviderInterface
-from zksync_sdk.zksync_provider.types import AccountDoesNotExist, EthSignature, Transaction, TxType
+from zksync_sdk.zksync_provider.types import FeeTxType, TransactionWithSignature
 
 __all__ = ['ZkSyncProviderV01']
 
@@ -29,15 +30,16 @@ class ZkSyncProviderV01(ZkSyncProviderInterface):
                         ) for token in data.values()]
         return Tokens(tokens=tokens)
 
-    async def submit_txs_batch(self, transactions: List[Transaction],
+    async def submit_txs_batch(self, transactions: List[TransactionWithSignature],
                                signatures: Optional[
-                                   Union[List[EthSignature], EthSignature]
-                               ] = None):
+                                   Union[List[TxEthSignature], TxEthSignature]
+                               ] = None) -> List[str]:
         if signatures is None:
             signatures = []
-        elif isinstance(signatures, EthSignature):
+        elif isinstance(signatures, TxEthSignature):
             signatures = [signatures]
-
+        transactions = [tr.dict() for tr in transactions]
+        signatures = [sig.dict() for sig in signatures]
         return await self.provider.request("submit_txs_batch", [transactions, signatures])
 
     async def get_contract_address(self) -> ContractAddress:
@@ -67,14 +69,14 @@ class ZkSyncProviderV01(ZkSyncProviderInterface):
         data = await self.provider.request("ethop_info", [serial_id])
         return EthOpInfo(**data)
 
-    async def get_transactions_batch_fee(self, tx_types: List[TxType], addresses: List[Address],
+    async def get_transactions_batch_fee(self, tx_types: List[FeeTxType], addresses: List[Address],
                                          token_like) -> Fee:
 
         return await self.provider.request('get_txs_batch_fee_in_wei',
                                            [[tx_type.value for tx_type in tx_types],
                                             addresses, token_like])
 
-    async def get_transaction_fee(self, tx_type: TxType, address: str,
+    async def get_transaction_fee(self, tx_type: FeeTxType, address: str,
                                   token_like: TokenLike) -> Fee:
 
         data = await self.provider.request('get_tx_fee', [tx_type.value, address, token_like])

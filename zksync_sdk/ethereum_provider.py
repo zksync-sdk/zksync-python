@@ -20,9 +20,9 @@ class EthereumProvider:
 
     async def deposit(self, token: Token, amount: Decimal, address: str):
         if token.is_eth():
-            self.zksync.deposit_eth(address, token.from_decimal(amount))
+            return self.zksync.deposit_eth(address, token.from_decimal(amount))
         else:
-            self.zksync.deposit_erc20(token.address, address, token.from_decimal(amount))
+            return self.zksync.deposit_erc20(token.address, address, token.from_decimal(amount))
 
     async def full_exit(self, token: Token, account_id: int):
         return self.zksync.full_exit(account_id, token.address)

@@ -1,33 +1,26 @@
+from dataclasses import dataclass
 from enum import Enum
 
-from zksync_sdk.types import EncodedTx, SignatureType
+__all__ = ['FeeTxType']
 
-__all__ = ['Transaction', 'EthSignature', 'TxType', 'ZkSyncProviderError', 'AccountDoesNotExist']
+from zksync_sdk.types import EncodedTx, TxEthSignature
 
 
-class Transaction:
+@dataclass
+class TransactionWithSignature:
     tx: EncodedTx
-    signature: bytes
+    signature: TxEthSignature
+
+    def dict(self):
+        return {
+            'tx':        self.tx.dict(),
+            'signature': self.signature.dict(),
+        }
 
 
-class EthSignature:
-    type: SignatureType
-    signature: str
-
-
-class TxType(Enum):
+class FeeTxType(Enum):
     withdraw = "Withdraw"
     transfer = "Transfer"
     fast_withdraw = "FastWithdraw"
     change_pub_key_onchain = {"ChangePubKey": "Onchain"}
     change_pub_key_ecdsa = {"ChangePubKey": "ECDSA"}
-
-
-class ZkSyncProviderError(Exception):
-    pass
-
-
-class AccountDoesNotExist(ZkSyncProviderError):
-    def __init__(self, address, *args):
-        self.address = address
-        super().__init__(*args)

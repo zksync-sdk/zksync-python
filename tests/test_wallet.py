@@ -13,6 +13,7 @@ from zksync_sdk.types import ChangePubKeyTypes, Token
 from zksync_sdk.wallet import Wallet
 from zksync_sdk.zksync import ZkSync
 from zksync_sdk.zksync_provider import ZkSyncProviderV01
+from zksync_sdk.zksync_provider.types import TransactionWithSignature
 from zksync_sdk.zksync_signer import ZkSyncSigner
 
 
@@ -48,8 +49,9 @@ class TestWallet(IsolatedAsyncioTestCase):
         token = await self.wallet.resolve_token("USDT")
         await self.wallet.ethereum_provider.approve_deposit(token, Decimal(10))
 
-        assert await self.wallet.ethereum_provider.deposit(token, Decimal(10),
-                                                           self.account.address)
+        res = await self.wallet.ethereum_provider.deposit(token, Decimal(10),
+                                                          self.account.address)
+        assert res
 
     async def test_change_pubkey(self):
         res = await self.wallet.set_signing_key("ETH", ChangePubKeyTypes.ecdsa)
@@ -65,6 +67,17 @@ class TestWallet(IsolatedAsyncioTestCase):
         tr = await self.wallet.transfer("0x21dDF51966f2A66D03998B0956fe59da1b3a179F",
                                         amount=Decimal("0.0001"), token="ETH")
         assert tr
+
+    async def test_batch(self):
+        trs = []
+        for i in range(3):
+
+            tr, sig = await self.wallet.build_transfer(
+                "0x21dDF51966f2A66D03998B0956fe59da1b3a179F",
+                amount=Decimal("0.0001"), token="ETH")
+            trs.append(TransactionWithSignature(tr, sig))
+        res = await self.wallet.send_txs_batch(trs)
+        assert len(res) == 3
 
     async def test_forced_exit(self):
         tr = await self.wallet.forced_exit("0x21dDF51966f2A66D03998B0956fe59da1b3a179F",

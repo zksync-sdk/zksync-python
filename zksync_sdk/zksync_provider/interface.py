@@ -8,7 +8,7 @@ from zksync_sdk.transport import JsonRPCTransport
 from zksync_sdk.types import (AccountState, ContractAddress, EncodedTx, EthOpInfo, Fee,
                               Token, TokenLike, Tokens, TransactionDetails,
                               TxEthSignature, )
-from zksync_sdk.zksync_provider.types import EthSignature, Transaction, TxType
+from zksync_sdk.zksync_provider.types import FeeTxType, TransactionWithSignature
 
 __all__ = ['ZkSyncProviderInterface']
 
@@ -27,10 +27,10 @@ class ZkSyncProviderInterface(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    async def submit_txs_batch(self, transactions: List[Transaction],
+    async def submit_txs_batch(self, transactions: List[TransactionWithSignature],
                                signatures: Optional[
-                                   Union[List[EthSignature], EthSignature]
-                               ] = None):
+                                   Union[List[TxEthSignature], TxEthSignature]
+                               ] = None) -> List[str]:
         raise NotImplementedError
 
     @abstractmethod
@@ -62,12 +62,12 @@ class ZkSyncProviderInterface(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    async def get_transactions_batch_fee(self, tx_types: List[TxType], addresses: List[Address],
+    async def get_transactions_batch_fee(self, tx_types: List[FeeTxType], addresses: List[Address],
                                          token_like) -> Fee:
         raise NotImplementedError
 
     @abstractmethod
-    async def get_transaction_fee(self, tx_type: TxType, address: str,
+    async def get_transaction_fee(self, tx_type: FeeTxType, address: str,
                                   token_like: TokenLike) -> Fee:
         raise NotImplementedError
 

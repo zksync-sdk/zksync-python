@@ -1,4 +1,5 @@
 from decimal import Decimal
+from typing import List, Optional, Tuple, Union
 
 from zksync_sdk.ethereum_provider import EthereumProvider
 from zksync_sdk.ethereum_signer import EthereumSignerInterface
@@ -6,7 +7,8 @@ from zksync_sdk.types import (ChangePubKey, ChangePubKeyTypes, EncodedTx, Forced
                               TokenLike, Tokens,
                               Transfer,
                               TxEthSignature, Withdraw, )
-from zksync_sdk.zksync_provider import TxType, ZkSyncProviderInterface
+from zksync_sdk.zksync_provider import FeeTxType, ZkSyncProviderInterface
+from zksync_sdk.zksync_provider.types import TransactionWithSignature
 from zksync_sdk.zksync_signer import ZkSyncSigner
 
 DEFAULT_VALID_FROM = 0
@@ -34,20 +36,35 @@ class Wallet:
                                       fast_processing: bool = False) -> str:
         return await self.zk_provider.submit_tx(tx, eth_signature, fast_processing)
 
+    async def send_txs_batch(self, transactions: List[TransactionWithSignature],
+                             signatures: Optional[
+                                 Union[List[TxEthSignature], TxEthSignature]
+                             ] = None) -> List[str]:
+        return await self.zk_provider.submit_txs_batch(transactions, signatures)
+
     async def set_signing_key(self, fee_token: TokenLike, eth_auth_type: ChangePubKeyTypes,
                               fee: Decimal = None, nonce: int = None, batch_hash: bytes = None,
                               valid_from=DEFAULT_VALID_FROM, valid_until=DEFAULT_VALID_UNTIL):
+        change_pub_key, eth_signature = await self.build_change_pub_key(fee_token, eth_auth_type,
+                                                                        fee, nonce, batch_hash,
+                                                                        valid_from, valid_until)
 
+        return await self.send_signed_transaction(change_pub_key, eth_signature)
+
+    async def build_change_pub_key(self, fee_token: TokenLike, eth_auth_type: ChangePubKeyTypes,
+                                   fee: Decimal = None, nonce: int = None,
+                                   batch_hash: bytes = None,
+                                   valid_from=DEFAULT_VALID_FROM, valid_until=DEFAULT_VALID_UNTIL):
         account_id, new_nonce = await self.zk_provider.get_account_nonce(self.address())
         nonce = nonce or new_nonce
         token = await self.resolve_token(fee_token)
         if fee is None:
             if eth_auth_type == ChangePubKeyTypes.ecdsa:
-                fee = await self.zk_provider.get_transaction_fee(TxType.change_pub_key_ecdsa,
+                fee = await self.zk_provider.get_transaction_fee(FeeTxType.change_pub_key_ecdsa,
                                                                  self.address(),
                                                                  fee_token)
             elif eth_auth_type == ChangePubKeyTypes.onchain:
-                fee = await self.zk_provider.get_transaction_fee(TxType.change_pub_key_onchain,
+                fee = await self.zk_provider.get_transaction_fee(FeeTxType.change_pub_key_onchain,
                                                                  self.address(),
                                                                  fee_token)
             else:
@@ -87,39 +104,54 @@ class Wallet:
         zk_signature = self.zk_signer.sign_tx(change_pub_key)
         change_pub_key.signature = zk_signature
 
-        return await self.send_signed_transaction(change_pub_key, eth_signature)
+        return change_pub_key, eth_signature
 
     async def forced_exit(self, target: str, token: TokenLike, fee: Decimal = None,
                           valid_from=DEFAULT_VALID_FROM, valid_until=DEFAULT_VALID_UNTIL) -> str:
+        transfer, eth_signature = await self.build_forced_exit(target, token, fee,
+                                                               valid_from, valid_until)
+
+        return await self.send_signed_transaction(transfer, eth_signature)
+
+    async def build_forced_exit(
+        self,
+        target: str,
+        token: TokenLike,
+        fee: Decimal = None,
+        valid_from=DEFAULT_VALID_FROM,
+        valid_until=DEFAULT_VALID_UNTIL
+    ) -> Tuple[ForcedExit, TxEthSignature]:
         account_id, nonce = await self.zk_provider.get_account_nonce(self.address())
         token = await self.resolve_token(token)
         if fee is None:
-            fee = await self.zk_provider.get_transaction_fee(TxType.withdraw, target, token.id)
+            fee = await self.zk_provider.get_transaction_fee(FeeTxType.withdraw, target, token.id)
             fee = fee.total_fee
         else:
             fee = token.from_decimal(fee)
-        transfer = ForcedExit(initiator_account_id=account_id,
-                              target=target,
-                              fee=fee,
-                              nonce=nonce,
-                              valid_from=valid_from,
-                              valid_until=valid_until,
-                              token=token)
-        eth_signature = self.eth_signer.sign_tx(transfer)
-        zk_signature = self.zk_signer.sign_tx(transfer)
-        transfer.signature = zk_signature
-        return await self.send_signed_transaction(transfer, eth_signature)
+        forced_exit = ForcedExit(initiator_account_id=account_id,
+                                 target=target,
+                                 fee=fee,
+                                 nonce=nonce,
+                                 valid_from=valid_from,
+                                 valid_until=valid_until,
+                                 token=token)
+        eth_signature = self.eth_signer.sign_tx(forced_exit)
+        zk_signature = self.zk_signer.sign_tx(forced_exit)
+        forced_exit.signature = zk_signature
+
+        return forced_exit, eth_signature
 
     def address(self):
         return self.eth_signer.address()
 
-    async def transfer(self, to: str, amount: Decimal, token: TokenLike,
-                       fee: Decimal = None,
-                       valid_from=DEFAULT_VALID_FROM, valid_until=DEFAULT_VALID_UNTIL) -> str:
+    async def build_transfer(self, to: str, amount: Decimal, token: TokenLike,
+                             fee: Decimal = None,
+                             valid_from=DEFAULT_VALID_FROM,
+                             valid_until=DEFAULT_VALID_UNTIL) -> Tuple[Transfer, TxEthSignature]:
         account_id, nonce = await self.zk_provider.get_account_nonce(self.address())
         token = await self.resolve_token(token)
         if fee is None:
-            fee = await self.zk_provider.get_transaction_fee(TxType.transfer, to, token.id)
+            fee = await self.zk_provider.get_transaction_fee(FeeTxType.transfer, to, token.id)
             fee = fee.total_fee
         else:
             fee = token.from_decimal(fee)
@@ -133,30 +165,47 @@ class Wallet:
         eth_signature = self.eth_signer.sign_tx(transfer)
         zk_signature = self.zk_signer.sign_tx(transfer)
         transfer.signature = zk_signature
+        return transfer, eth_signature
+
+    async def transfer(self, to: str, amount: Decimal, token: TokenLike,
+                       fee: Decimal = None,
+                       valid_from=DEFAULT_VALID_FROM, valid_until=DEFAULT_VALID_UNTIL) -> str:
+        transfer, eth_signature = await self.build_transfer(to, amount, token, fee,
+                                                            valid_from, valid_until)
+
         return await self.send_signed_transaction(transfer, eth_signature)
 
-    async def withdraw(self, eth_address: str, amount: Decimal, token: TokenLike,
-                       fee: Decimal = None, fast: bool = False,
-                       valid_from=DEFAULT_VALID_FROM, valid_until=DEFAULT_VALID_UNTIL) -> str:
+    async def build_withdraw(self, eth_address: str, amount: Decimal, token: TokenLike,
+                             fee: Decimal = None, fast: bool = False,
+                             valid_from=DEFAULT_VALID_FROM,
+                             valid_until=DEFAULT_VALID_UNTIL) -> (Withdraw, TxEthSignature):
         account_id, nonce = await self.zk_provider.get_account_nonce(self.address())
         token = await self.resolve_token(token)
         if fee is None:
-            tx_type = TxType.fast_withdraw if fast else TxType.withdraw
+            tx_type = FeeTxType.fast_withdraw if fast else FeeTxType.withdraw
             fee = await self.zk_provider.get_transaction_fee(tx_type, eth_address, token.id)
             fee = fee.total_fee
         else:
             fee = token.from_decimal(fee)
-        transfer = Withdraw(account_id=account_id, from_address=self.address(),
+        withdraw = Withdraw(account_id=account_id, from_address=self.address(),
                             to_address=eth_address,
                             amount=token.from_decimal(amount), fee=fee,
                             nonce=nonce,
                             valid_from=valid_from,
                             valid_until=valid_until,
                             token=token)
-        eth_signature = self.eth_signer.sign_tx(transfer)
-        zk_signature = self.zk_signer.sign_tx(transfer)
-        transfer.signature = zk_signature
-        return await self.send_signed_transaction(transfer, eth_signature, fast)
+        eth_signature = self.eth_signer.sign_tx(withdraw)
+        zk_signature = self.zk_signer.sign_tx(withdraw)
+        withdraw.signature = zk_signature
+        return withdraw, eth_signature
+
+    async def withdraw(self, eth_address: str, amount: Decimal, token: TokenLike,
+                       fee: Decimal = None, fast: bool = False,
+                       valid_from=DEFAULT_VALID_FROM, valid_until=DEFAULT_VALID_UNTIL) -> str:
+
+        withdraw, eth_signature = await self.build_withdraw(eth_address, amount, token, fee, fast,
+                                                            valid_from, valid_until)
+        return await self.send_signed_transaction(withdraw, eth_signature, fast)
 
     async def get_balance(self, token: TokenLike, type: str):
         account_state = await self.zk_provider.get_state(self.address())
