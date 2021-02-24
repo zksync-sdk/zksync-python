@@ -48,7 +48,7 @@ class ZkSync(Contract):
     def set_auth_pub_key_hash(self, pub_key_hash: bytes, nonce: int):
         return self._call_method("setAuthPubkeyHash", pub_key_hash, nonce)
 
-    def auth_facts(self, sender_address: str, nonce: int) -> list:
+    def auth_facts(self, sender_address: str, nonce: int) -> bytes:
         return self.contract.caller.authFacts(sender_address, nonce)
 
 

@@ -27,7 +27,7 @@ class TestZkSyncContract(TestCase):
         assert tx['transactionHash']
 
     def test_full_exit(self):
-        tx = self.zksync.full_exit(1, self.account.address)
+        tx = self.zksync.full_exit(1, "0xfe1b6ABc39E46cEc54d275efB4b29B33be176c2A")
         assert tx['transactionHash']
 
     def test_auth_facts(self):
