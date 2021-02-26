@@ -10,10 +10,10 @@ from . import contract_abi
 zksync_abi_cache = None
 ierc20_abi_cache = None
 
-__all__ = ['zk_sync_abi', 'erc20_abi']
+__all__ = ['zksync_abi', 'erc20_abi']
 
 
-def zk_sync_abi():
+def zksync_abi():
     global zksync_abi_cache
 
     if zksync_abi_cache is None:

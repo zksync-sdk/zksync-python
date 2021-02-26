@@ -314,6 +314,12 @@ class ForcedExit(EncodedTx):
 
 
 @dataclass
-class SignedTransaction:
-    transaction: EncodedTx
-    eth_signature: bytes
+class TransactionWithSignature:
+    tx: EncodedTx
+    signature: TxEthSignature
+
+    def dict(self):
+        return {
+            'tx':        self.tx.dict(),
+            'signature': self.signature.dict(),
+        }

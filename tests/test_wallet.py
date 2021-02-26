@@ -4,17 +4,10 @@ from unittest import IsolatedAsyncioTestCase
 from eth_account import Account
 from web3 import HTTPProvider, Web3
 
-from zksync_sdk import ZkSyncLibrary
-from zksync_sdk.ethereum_provider import EthereumProvider
-from zksync_sdk.ethereum_signer import EthereumSignerWeb3
+from zksync_sdk import (EthereumProvider, EthereumSignerWeb3, HttpJsonRPCTransport, Wallet, ZkSync,
+                        ZkSyncLibrary, ZkSyncProviderV01, ZkSyncSigner, )
 from zksync_sdk.network import rinkeby
-from zksync_sdk.transport.http import HttpJsonRPCTransport
-from zksync_sdk.types import ChangePubKeyTypes, Token
-from zksync_sdk.wallet import Wallet
-from zksync_sdk.zksync import ZkSync
-from zksync_sdk.zksync_provider import ZkSyncProviderV01
-from zksync_sdk.zksync_provider.types import TransactionWithSignature
-from zksync_sdk.zksync_signer import ZkSyncSigner
+from zksync_sdk.types import ChangePubKeyTypes, Token, TransactionWithSignature
 
 
 class TestWallet(IsolatedAsyncioTestCase):

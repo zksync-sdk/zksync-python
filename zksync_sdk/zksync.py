@@ -1,10 +1,10 @@
 from eth_account.signers.base import BaseAccount
 from web3 import Web3
 
-from zksync_sdk.contract_utils import erc20_abi, zk_sync_abi
+from zksync_sdk.contract_utils import erc20_abi, zksync_abi
 
-MAX_ERC20_APPROVE_AMOUNT = 115792089237316195423570985008687907853269984665640564039457584007913129639935
-ERC20_APPROVE_THRESHOLD = 57896044618658097711785492504343953926634992332820282019728792003956564819968
+MAX_ERC20_APPROVE_AMOUNT = 115792089237316195423570985008687907853269984665640564039457584007913129639935  # 2^256 - 1
+ERC20_APPROVE_THRESHOLD = 57896044618658097711785492504343953926634992332820282019728792003956564819968  # 2^255
 
 
 class Contract:
@@ -33,7 +33,7 @@ class Contract:
 
 class ZkSync(Contract):
     def __init__(self, web3: Web3, zksync_contract_address: str, account: BaseAccount):
-        super().__init__(zksync_contract_address, web3, account, zk_sync_abi())
+        super().__init__(zksync_contract_address, web3, account, zksync_abi())
 
     def deposit_eth(self, address: str, amount: int):
         return self._call_method("depositETH", address, amount=amount)
