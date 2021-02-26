@@ -12,7 +12,7 @@ from zksync_sdk.zksync_provider.types import TransactionWithSignature
 from zksync_sdk.zksync_signer import ZkSyncSigner
 
 DEFAULT_VALID_FROM = 0
-DEFAULT_VALID_UNTIL = 2 ** 31
+DEFAULT_VALID_UNTIL = 2 ** 32 - 1
 
 
 class WalletError(Exception):
