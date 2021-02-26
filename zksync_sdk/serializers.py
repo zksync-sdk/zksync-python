@@ -78,23 +78,10 @@ def bits_into_bytes_in_be_order(bits: List[int]):
     result = [0] * size
     for i in range(size):
         value = 0
-        if bits[i * 8] == 1:
-            value |= 0x80
-        if bits[i * 8 + 1] == 1:
-            value |= 0x40
-        if bits[i * 8 + 2] == 1:
-            value |= 0x20
-        if bits[i * 8 + 3] == 1:
-            value |= 0x10
-        if bits[i * 8 + 4] == 1:
-            value |= 0x08
-        if bits[i * 8 + 5] == 1:
-            value |= 0x04
-        if bits[i * 8 + 6] == 1:
-            value |= 0x02
-        if bits[i * 8 + 7] == 1:
-            value |= 0x01
+        for j in range(8):
+            value |= bits[i*8 + j] * 2**(7-j)
         result[i] = value
+
     return result
 
 
@@ -112,14 +99,8 @@ def reverse_bits(buffer: List[int]):
 def buffer_to_bits_be(buff):
     res = [0] * len(buff) * 8
     for i, b in enumerate(buff):
-        res[i * 8] = 1 if (b & 0x80) != 0 else 0
-        res[i * 8 + 1] = 1 if (b & 0x40) != 0 else 0
-        res[i * 8 + 2] = 1 if (b & 0x20) != 0 else 0
-        res[i * 8 + 3] = 1 if (b & 0x10) != 0 else 0
-        res[i * 8 + 4] = 1 if (b & 0x08) != 0 else 0
-        res[i * 8 + 5] = 1 if (b & 0x04) != 0 else 0
-        res[i * 8 + 6] = 1 if (b & 0x02) != 0 else 0
-        res[i * 8 + 7] = 1 if (b & 0x01) != 0 else 0
+        for j in range(8):
+            res[i*8 + j] = (b >> (7-j)) & 1
     return res
 
 

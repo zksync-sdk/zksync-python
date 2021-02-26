@@ -3,8 +3,7 @@ from unittest import TestCase
 from eth_account import Account
 
 from zksync_sdk import ZkSyncLibrary
-from zksync_sdk.serializers import (closest_packable_amount, closest_packable_transaction_fee,
-                                    )
+from zksync_sdk.serializers import closest_packable_amount, closest_packable_transaction_fee
 from zksync_sdk.types import ChainId, ForcedExit, Token, Transfer, Withdraw
 from zksync_sdk.zksync_signer import ZkSyncSigner
 
