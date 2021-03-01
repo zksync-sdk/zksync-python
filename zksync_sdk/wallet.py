@@ -101,7 +101,7 @@ class Wallet:
             eth_auth_data=eth_auth_data
         )
 
-        eth_signature = self.eth_signer.sign(change_pub_key.get_eth_tx_bytes())
+        eth_signature = await self.eth_signer.sign(change_pub_key.get_eth_tx_bytes())
         eth_auth_data = change_pub_key.get_auth_data(eth_signature.signature)
 
         change_pub_key.eth_auth_data = eth_auth_data
@@ -139,7 +139,7 @@ class Wallet:
                                  valid_from=valid_from,
                                  valid_until=valid_until,
                                  token=token)
-        eth_signature = self.eth_signer.sign_tx(forced_exit)
+        eth_signature = await self.eth_signer.sign_tx(forced_exit)
         zk_signature = self.zk_signer.sign_tx(forced_exit)
         forced_exit.signature = zk_signature
 
@@ -166,7 +166,7 @@ class Wallet:
                             valid_from=valid_from,
                             valid_until=valid_until,
                             token=token)
-        eth_signature = self.eth_signer.sign_tx(transfer)
+        eth_signature = await self.eth_signer.sign_tx(transfer)
         zk_signature = self.zk_signer.sign_tx(transfer)
         transfer.signature = zk_signature
         return transfer, eth_signature
@@ -198,7 +198,7 @@ class Wallet:
                             valid_from=valid_from,
                             valid_until=valid_until,
                             token=token)
-        eth_signature = self.eth_signer.sign_tx(withdraw)
+        eth_signature = await self.eth_signer.sign_tx(withdraw)
         zk_signature = self.zk_signer.sign_tx(withdraw)
         withdraw.signature = zk_signature
         return withdraw, eth_signature
@@ -212,7 +212,7 @@ class Wallet:
         return await self.send_signed_transaction(withdraw, eth_signature, fast)
 
     async def get_balance(self, token: TokenLike, type: str):
-        account_state = await self.zk_provider.get_state(self.address())
+        account_state = await self.get_account_state()
         token = await self.resolve_token(token)
 
         if type == "committed":
@@ -223,8 +223,11 @@ class Wallet:
             token_balance = 0
         return token_balance
 
+    async def get_account_state(self):
+        return await self.zk_provider.get_state(self.address())
+
     async def is_signing_key_set(self) -> bool:
-        account_state = await self.zk_provider.get_state(self.address())
+        account_state = await self.get_account_state()
         signer_pub_key_hash = self.zk_signer.pubkey_hash_str()
         return account_state.id is not None and\
                account_state.committed.pub_key_hash == signer_pub_key_hash

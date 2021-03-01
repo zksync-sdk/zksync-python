@@ -11,11 +11,11 @@ class EthereumSignerWeb3(EthereumSignerInterface):
     def __init__(self, account: BaseAccount):
         self.account = account
 
-    def sign_tx(self, tx: EncodedTx) -> TxEthSignature:
+    async def sign_tx(self, tx: EncodedTx) -> TxEthSignature:
         message = tx.human_readable_message()
-        return self.sign(message.encode())
+        return await self.sign(message.encode())
 
-    def sign(self, message: bytes) -> TxEthSignature:
+    async def sign(self, message: bytes) -> TxEthSignature:
         signature = self.account.sign_message(encode_defunct(message))
         return TxEthSignature(signature=signature.signature, type=SignatureType.ethereum_signature)
 

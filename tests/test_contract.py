@@ -1,7 +1,6 @@
 from unittest import TestCase
 
-from eth_account import Account
-from web3 import HTTPProvider, Web3
+from web3 import HTTPProvider, Web3, Account
 
 from zksync_sdk.zksync import ZkSync
 
