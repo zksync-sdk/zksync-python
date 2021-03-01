@@ -7,15 +7,14 @@ RUN wget -q -O /etc/apk/keys/sgerrand.rsa.pub https://alpine-pkgs.sgerrand.com/s
 RUN wget https://github.com/sgerrand/alpine-pkg-glibc/releases/download/2.28-r0/glibc-2.28-r0.apk
 RUN apk add glibc-2.28-r0.apk
 RUN mkdir -p /src/zksync_sdk
-RUN mkdir -p /libs
 WORKDIR /src
-RUN wget -O /src/zks-crypto-linux-x64.so  https://github.com/zksync-sdk/zksync-crypto-c/releases/download/v0.1.0/zks-crypto-linux-x64.so
-RUN wget -O /src/zks-crypto-linux-x64.a  https://github.com/zksync-sdk/zksync-crypto-c/releases/download/v0.1.0/zks-crypto-linux-x64.a
+RUN wget -O /lib/zks-crypto-linux-x64.so  https://github.com/zksync-sdk/zksync-crypto-c/releases/download/v0.1.0/zks-crypto-linux-x64.so
+RUN wget -O /lib/zks-crypto-linux-x64.a  https://github.com/zksync-sdk/zksync-crypto-c/releases/download/v0.1.0/zks-crypto-linux-x64.a
 
 COPY setup.cfg /src
 COPY setup.py /src
 COPY .git /src/.git
 RUN python3 setup.py install
 COPY . /src
-ENV ZK_SYNC_LIBRARY_PATH=/src/zks-crypto-linux-x64.so
+ENV ZK_SYNC_LIBRARY_PATH=/lib/zks-crypto-linux-x64.so
 CMD ["tox"]
