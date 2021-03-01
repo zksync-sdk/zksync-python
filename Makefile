@@ -2,26 +2,25 @@ SHELL := /bin/bash
 
 .PHONY: test test37 test38 test39 mypy coverage
 
-.buildts: Dockerfile, setup.cfg, setup.py
 TOX := docker-compose run --rm app tox
 
-test: | .buildts
+test:
 	$(TOX)
 
 
-test37: | .buildts
+test37:
 	$(TOX) -e py37
 
-test38: | .buildts
+test38:
 	$(TOX) -e py38
 
-test39: | .buildts
+test39:
 	$(TOX) -e py39
 
-mypy: | .buildts
+mypy:
 	$(TOX) -e mypy
 
-.coverage: ${SOURCES} ${TESTS} | .buildts
+.coverage: ${SOURCES} ${TESTS}
 	$(TOX) -e py38
 
 coverage: .coverage
