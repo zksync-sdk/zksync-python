@@ -24,9 +24,9 @@ class Contract:
             **kwargs
         ).buildTransaction(params)
 
-        transaction.update({'nonce': self.web3.eth.getTransactionCount(self.account.address)})
+        transaction.update({'nonce': self.web3.eth.get_transaction_count(self.account.address)})
         signed_tx = self.account.sign_transaction(transaction)
-        txn_hash = self.web3.eth.sendRawTransaction(signed_tx.rawTransaction)
+        txn_hash = self.web3.eth.send_raw_transaction(signed_tx.rawTransaction)
         txn_receipt = self.web3.eth.waitForTransactionReceipt(txn_hash)
         return txn_receipt
 

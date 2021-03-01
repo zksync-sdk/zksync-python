@@ -6,9 +6,8 @@ from zksync_sdk.ethereum_signer import EthereumSignerInterface
 from zksync_sdk.types import (ChangePubKey, ChangePubKeyTypes, EncodedTx, ForcedExit, Token,
                               TokenLike, Tokens,
                               Transfer,
-                              TxEthSignature, Withdraw, )
+                              TxEthSignature, Withdraw, TransactionWithSignature)
 from zksync_sdk.zksync_provider import FeeTxType, ZkSyncProviderInterface
-from zksync_sdk.zksync_provider.types import TransactionWithSignature
 from zksync_sdk.zksync_signer import ZkSyncSigner
 
 DEFAULT_VALID_FROM = 0

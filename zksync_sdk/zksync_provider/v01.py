@@ -4,12 +4,12 @@ from typing import List, Optional, Tuple, Union
 from eth_typing import Address
 from web3 import Web3
 
-from zksync_sdk.types import (AccountState, ContractAddress, EncodedTx, EthOpInfo, Fee,
-                              Token, TokenLike, Tokens, TransactionDetails,
+from zksync_sdk.types import (AccountState, ContractAddress, EncodedTx, EthOpInfo, Fee, Token,
+                              TokenLike, Tokens, TransactionDetails, TransactionWithSignature,
                               TxEthSignature, )
 from zksync_sdk.zksync_provider.error import AccountDoesNotExist
 from zksync_sdk.zksync_provider.interface import ZkSyncProviderInterface
-from zksync_sdk.zksync_provider.types import FeeTxType, TransactionWithSignature
+from zksync_sdk.zksync_provider.types import FeeTxType
 
 __all__ = ['ZkSyncProviderV01']
 

@@ -17,4 +17,4 @@ class EthereumSignerInterface(ABC):
 
     @abstractmethod
     def address(self) -> str:
-        pass
+        raise NotImplementedError

@@ -5,10 +5,10 @@ from typing import List, Optional, Tuple, Union
 from eth_typing import Address
 
 from zksync_sdk.transport import JsonRPCTransport
-from zksync_sdk.types import (AccountState, ContractAddress, EncodedTx, EthOpInfo, Fee,
-                              Token, TokenLike, Tokens, TransactionDetails,
+from zksync_sdk.types import (AccountState, ContractAddress, EncodedTx, EthOpInfo, Fee, Token,
+                              TokenLike, Tokens, TransactionDetails, TransactionWithSignature,
                               TxEthSignature, )
-from zksync_sdk.zksync_provider.types import FeeTxType, TransactionWithSignature
+from zksync_sdk.zksync_provider.types import FeeTxType
 
 __all__ = ['ZkSyncProviderInterface']
 

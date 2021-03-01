@@ -1,12 +1,11 @@
-# zkSync Java SDK
+# zkSync Python SDK
 
 [![Live on Mainnet](https://img.shields.io/badge/wallet-Live%20on%20Mainnet-blue)](https://wallet.zksync.io)
 [![Live on Rinkeby](https://img.shields.io/badge/wallet-Live%20on%20Rinkeby-blue)](https://rinkeby.zksync.io)
 [![Live on Ropsten](https://img.shields.io/badge/wallet-Live%20on%20Ropsten-blue)](https://ropsten.zksync.io)
 [![Join the technical discussion chat at https://gitter.im/matter-labs/zksync](https://badges.gitter.im/matter-labs/zksync.svg)](https://gitter.im/matter-labs/zksync?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-This repository provides a Java SDK for zkSync developers, which can be used either on PC or Android.
-Presented to you with ❤️ by [Matter Labs](https://matter-labs.io/) and [Argent](https://www.argent.xyz/).
+This repository provides a Python SDK for zkSync developers, which can be used either on PC or Android.
 
 ## What is zkSync
 
