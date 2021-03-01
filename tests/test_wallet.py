@@ -58,7 +58,7 @@ class TestWallet(IsolatedAsyncioTestCase):
 
     async def test_transfer(self):
         tr = await self.wallet.transfer("0x21dDF51966f2A66D03998B0956fe59da1b3a179F",
-                                        amount=Decimal("0.0001"), token="ETH")
+                                        amount=Decimal("0.01"), token="USDC")
         assert tr
 
     async def test_batch(self):
