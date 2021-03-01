@@ -7,7 +7,7 @@ from web3 import HTTPProvider, Web3
 from zksync_sdk import (EthereumProvider, EthereumSignerWeb3, HttpJsonRPCTransport, Wallet, ZkSync,
                         ZkSyncLibrary, ZkSyncProviderV01, ZkSyncSigner, )
 from zksync_sdk.network import rinkeby
-from zksync_sdk.types import ChangePubKeyTypes, Token, TransactionWithSignature
+from zksync_sdk.types import ChangePubKeyEcdsa, Token, TransactionWithSignature
 
 
 class TestWallet(IsolatedAsyncioTestCase):
@@ -47,7 +47,7 @@ class TestWallet(IsolatedAsyncioTestCase):
         assert res
 
     async def test_change_pubkey(self):
-        res = await self.wallet.set_signing_key("ETH", ChangePubKeyTypes.ecdsa)
+        res = await self.wallet.set_signing_key("ETH", eth_auth_data=ChangePubKeyEcdsa())
         assert res
 
     async def test_is_public_key_onset(self):

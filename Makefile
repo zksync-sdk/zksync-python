@@ -5,7 +5,7 @@ SHELL := /bin/bash
 .buildts:
 	python3 setup.py install
 
-TOX := docker-compose run --rm app
+TOX := docker-compose run --rm app tox
 
 test: | .buildts
 	$(TOX)

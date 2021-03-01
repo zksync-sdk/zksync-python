@@ -2,7 +2,7 @@ import abc
 from dataclasses import dataclass
 from decimal import Decimal
 from enum import Enum
-from typing import Dict, List, Optional, Union
+from typing import List, Optional, Union
 
 from pydantic import BaseModel
 
@@ -21,6 +21,34 @@ class ChangePubKeyTypes(Enum):
     onchain = "Onchain"
     ecdsa = "ECDSA"
     create2 = "CREATE2"
+
+
+@dataclass
+class ChangePubKeyEcdsa:
+    batch_hash: bytes = b"\x00" * 32
+
+    def encode_message(self):
+        return self.batch_hash
+
+    def dict(self, signature: str):
+        return {"type":         "ECDSA",
+                "ethSignature": signature,
+                "batchHash":    f"0x{self.batch_hash.hex()}"}
+
+
+@dataclass
+class ChangePubKeyCREATE2:
+    creator_address: str
+    salt_arg: bytes
+    code_hash: bytes
+
+    def encode_message(self):
+        return self.salt_arg
+
+    def dict(self):
+        return {"type":     "CREATE2",
+                "saltArg":  f"0x{self.salt_arg.hex()}",
+                "codeHash": f"0x{self.code_hash.hex()}"}
 
 
 class Token(BaseModel):
@@ -117,8 +145,7 @@ class ChangePubKey(EncodedTx):
     nonce: int
     valid_from: int
     valid_until: int
-    batch_hash: bytes = b"\x00" * 32
-    eth_auth_data: Dict = None
+    eth_auth_data: Union[ChangePubKeyCREATE2, ChangePubKeyEcdsa] = None
     eth_signature: TxEthSignature = None
     signature: TxSignature = None
 
@@ -142,12 +169,22 @@ class ChangePubKey(EncodedTx):
         ])
 
     def get_eth_tx_bytes(self) -> bytes:
-        return b"".join([
+        data = b"".join([
             serialize_address(self.new_pk_hash),
             serialize_nonce(self.nonce),
             serialize_account_id(self.account_id),
-            self.batch_hash,
         ])
+        if self.eth_auth_data is not None:
+            data += self.eth_auth_data.encode_message()
+        return data
+
+    def get_auth_data(self, signature: str):
+        if self.eth_auth_data is None:
+            return {"type": "Onchain"}
+        elif isinstance(self.eth_auth_data, ChangePubKeyEcdsa):
+            return self.eth_auth_data.dict(signature)
+        elif isinstance(self.eth_auth_data, ChangePubKeyCREATE2):
+            return self.eth_auth_data.dict()
 
     def dict(self):
         return {

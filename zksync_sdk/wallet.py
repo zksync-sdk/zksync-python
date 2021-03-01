@@ -3,10 +3,11 @@ from typing import List, Optional, Tuple, Union
 
 from zksync_sdk.ethereum_provider import EthereumProvider
 from zksync_sdk.ethereum_signer import EthereumSignerInterface
-from zksync_sdk.types import (ChangePubKey, ChangePubKeyTypes, EncodedTx, ForcedExit, Token,
-                              TokenLike, Tokens,
-                              Transfer,
-                              TxEthSignature, Withdraw, TransactionWithSignature)
+from zksync_sdk.types import (ChangePubKey, ChangePubKeyCREATE2, ChangePubKeyEcdsa,
+                              ChangePubKeyTypes, EncodedTx,
+                              ForcedExit, Token,
+                              TokenLike, Tokens, TransactionWithSignature, Transfer,
+                              TxEthSignature, Withdraw, )
 from zksync_sdk.zksync_provider import FeeTxType, ZkSyncProviderInterface
 from zksync_sdk.zksync_signer import ZkSyncSigner
 
@@ -41,22 +42,34 @@ class Wallet:
                              ] = None) -> List[str]:
         return await self.zk_provider.submit_txs_batch(transactions, signatures)
 
-    async def set_signing_key(self, fee_token: TokenLike, eth_auth_type: ChangePubKeyTypes,
-                              fee: Decimal = None, nonce: int = None, batch_hash: bytes = None,
+    async def set_signing_key(self, fee_token: TokenLike, *,
+                              eth_auth_data: Union[ChangePubKeyCREATE2, ChangePubKeyEcdsa] = None,
+                              fee: Decimal = None, nonce: int = None,
                               valid_from=DEFAULT_VALID_FROM, valid_until=DEFAULT_VALID_UNTIL):
-        change_pub_key, eth_signature = await self.build_change_pub_key(fee_token, eth_auth_type,
-                                                                        fee, nonce, batch_hash,
-                                                                        valid_from, valid_until)
+        change_pub_key, eth_signature = await self.build_change_pub_key(fee_token,
+                                                                        eth_auth_data=eth_auth_data,
+                                                                        fee=fee, nonce=nonce,
+                                                                        valid_from=valid_from,
+                                                                        valid_until=valid_until)
 
         return await self.send_signed_transaction(change_pub_key, eth_signature)
 
-    async def build_change_pub_key(self, fee_token: TokenLike, eth_auth_type: ChangePubKeyTypes,
-                                   fee: Decimal = None, nonce: int = None,
-                                   batch_hash: bytes = None,
-                                   valid_from=DEFAULT_VALID_FROM, valid_until=DEFAULT_VALID_UNTIL):
+    async def build_change_pub_key(
+        self, fee_token: TokenLike, *,
+        fee: Decimal = None, nonce: int = None,
+        eth_auth_data: Union[ChangePubKeyCREATE2, ChangePubKeyEcdsa] = None,
+        valid_from=DEFAULT_VALID_FROM, valid_until=DEFAULT_VALID_UNTIL
+    ):
         account_id, new_nonce = await self.zk_provider.get_account_nonce(self.address())
         nonce = nonce or new_nonce
         token = await self.resolve_token(fee_token)
+        if isinstance(eth_auth_data, ChangePubKeyEcdsa):
+            eth_auth_type = ChangePubKeyTypes.ecdsa
+        elif isinstance(eth_auth_data, ChangePubKeyCREATE2):
+            eth_auth_type = ChangePubKeyTypes.create2
+        else:
+            eth_auth_type = ChangePubKeyTypes.onchain
+
         if fee is None:
             if eth_auth_type == ChangePubKeyTypes.ecdsa:
                 fee = await self.zk_provider.get_transaction_fee(FeeTxType.change_pub_key_ecdsa,
@@ -66,8 +79,10 @@ class Wallet:
                 fee = await self.zk_provider.get_transaction_fee(FeeTxType.change_pub_key_onchain,
                                                                  self.address(),
                                                                  fee_token)
-            else:
-                raise NotImplementedError
+            elif eth_auth_type == ChangePubKeyTypes.create2:
+                fee = await self.zk_provider.get_transaction_fee(FeeTxType.change_pub_key_create2,
+                                                                 self.address(),
+                                                                 fee_token)
 
             fee = fee.total_fee
         else:
@@ -83,21 +98,11 @@ class Wallet:
             nonce=nonce,
             valid_until=valid_until,
             valid_from=valid_from,
+            eth_auth_data=eth_auth_data
         )
-        if batch_hash is not None:
-            change_pub_key.batch_hash = batch_hash
 
-        if eth_auth_type == ChangePubKeyTypes.onchain:
-            eth_auth_data = {"type": "Onchain"}
-            eth_signature = self.eth_signer.sign(change_pub_key.get_eth_tx_bytes())
-
-        elif eth_auth_type == ChangePubKeyTypes.ecdsa:
-            eth_signature = self.eth_signer.sign(change_pub_key.get_eth_tx_bytes())
-            eth_auth_data = {"type":         "ECDSA",
-                             "ethSignature": eth_signature.signature,
-                             "batchHash":    f"0x{change_pub_key.batch_hash.hex()}"}
-        else:
-            raise NotImplementedError
+        eth_signature = self.eth_signer.sign(change_pub_key.get_eth_tx_bytes())
+        eth_auth_data = change_pub_key.get_auth_data(eth_signature.signature)
 
         change_pub_key.eth_auth_data = eth_auth_data
         zk_signature = self.zk_signer.sign_tx(change_pub_key)
