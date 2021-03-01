@@ -2,9 +2,7 @@ SHELL := /bin/bash
 
 .PHONY: test test37 test38 test39 mypy coverage
 
-.buildts:
-	python3 setup.py install
-
+.buildts: Dockerfile, setup.cfg, setup.py
 TOX := docker-compose run --rm app tox
 
 test: | .buildts
