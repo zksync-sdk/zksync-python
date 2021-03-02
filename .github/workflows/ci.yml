@@ -1,0 +1,15 @@
+name: CI
+
+on:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: [self-hosted, PYTHON]
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: test
+        run: |
+          docker-compose build
+          make test

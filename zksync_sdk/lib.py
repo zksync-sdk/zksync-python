@@ -1,5 +1,6 @@
 import ctypes
 from ctypes import (Structure, c_ubyte, cdll)
+import os
 
 PRIVATE_KEY_LEN = 32
 PUBLIC_KEY_LEN = 32
@@ -33,18 +34,18 @@ class ZksSignature(Structure):
 
 class ZkSyncLibrary:
 
-    def __init__(self, library_path: str):
+    def __init__(self, library_path: str = None):
+        if library_path is None:
+            library_path = os.getenv("ZK_SYNC_LIBRARY_PATH")
         self.lib = cdll.LoadLibrary(library_path)
 
     def private_key_from_seed(self, seed: bytes):
-        assert len(seed) == 32
         private_key = ctypes.pointer(ZksPrivateKey())
-        self.lib.zks_crypto_private_key_from_seed(seed, 32, private_key)
+        self.lib.zks_crypto_private_key_from_seed(seed, len(seed), private_key)
         return bytes(private_key.contents.data)
 
     def get_public_key(self, private_key: bytes):
         assert len(private_key) == PRIVATE_KEY_LEN
-
         public_key = ctypes.pointer(ZksPackedPublicKey())
         pk = ctypes.pointer(ZksPrivateKey(data=(c_ubyte * PRIVATE_KEY_LEN)(*private_key)))
         self.lib.zks_crypto_private_key_to_public_key(pk, public_key)
