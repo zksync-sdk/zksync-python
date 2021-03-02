@@ -92,7 +92,7 @@ class TestWallet(IsolatedAsyncioTestCase):
 
 
 class TestEthereumProvider(IsolatedAsyncioTestCase):
-    private_key = "0x53c833656351c686dc66d2454b48665554212f4fa71db4f07d59c3be87d894dd"
+    private_key = "0xcfcf55abae35cfd18caeb3975688d3dcb4834dac21d9c03ca0b670a00028df4c"
 
     async def asyncSetUp(self) -> None:
         self.account = Account.from_key(self.private_key)
@@ -108,8 +108,8 @@ class TestEthereumProvider(IsolatedAsyncioTestCase):
 
     async def test_approve_deposit(self):
         token = Token(
-            address=Web3.toChecksumAddress('0xfe1b6abc39e46cec54d275efb4b29b33be176c2a'),
-            id=20, symbol='PHNX',
+            address=Web3.toChecksumAddress('0xeb8f08a975ab53e34d8a0330e0d34de942c95926'),
+            id=20, symbol='USDC',
             decimals=18)
         assert await self.ethereum_provider.approve_deposit(token, Decimal(10))
 
