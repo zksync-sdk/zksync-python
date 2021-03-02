@@ -39,9 +39,9 @@ class TestWallet(IsolatedAsyncioTestCase):
 
     async def test_deposit(self):
         token = await self.wallet.resolve_token("USDT")
-        await self.wallet.ethereum_provider.approve_deposit(token, Decimal(10))
+        await self.wallet.ethereum_provider.approve_deposit(token, Decimal(1))
 
-        res = await self.wallet.ethereum_provider.deposit(token, Decimal(10),
+        res = await self.wallet.ethereum_provider.deposit(token, Decimal(1),
                                                           self.account.address)
         assert res
 
