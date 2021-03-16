@@ -82,11 +82,8 @@ class Token(BaseModel):
 
         # Creates a string with `self.decimals` numbers after decimal point.
         # Prevents scientific notation (string values like '1E-8').
+        # Prevents integral numbers having no decimal point in the string representation.
         d_str = f"{d:.{self.decimals}f}"
-
-        # For non-zero integral numbers add the ".0" suffix
-        if "." not in d_str:
-            return d_str + ".0"
 
         d_str = d_str.rstrip("0")
         if d_str[-1] == ".":
