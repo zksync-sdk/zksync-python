@@ -101,7 +101,7 @@ class Wallet:
             eth_auth_data=eth_auth_data
         )
 
-        eth_signature = await self.eth_signer.sign(change_pub_key.get_eth_tx_bytes())
+        eth_signature = self.eth_signer.sign(change_pub_key.get_eth_tx_bytes())
         eth_auth_data = change_pub_key.get_auth_data(eth_signature.signature)
 
         change_pub_key.eth_auth_data = eth_auth_data
@@ -139,7 +139,7 @@ class Wallet:
                                  valid_from=valid_from,
                                  valid_until=valid_until,
                                  token=token)
-        eth_signature = await self.eth_signer.sign_tx(forced_exit)
+        eth_signature = self.eth_signer.sign_tx(forced_exit)
         zk_signature = self.zk_signer.sign_tx(forced_exit)
         forced_exit.signature = zk_signature
 
@@ -166,7 +166,7 @@ class Wallet:
                             valid_from=valid_from,
                             valid_until=valid_until,
                             token=token)
-        eth_signature = await self.eth_signer.sign_tx(transfer)
+        eth_signature = self.eth_signer.sign_tx(transfer)
         zk_signature = self.zk_signer.sign_tx(transfer)
         transfer.signature = zk_signature
         return transfer, eth_signature
@@ -198,7 +198,7 @@ class Wallet:
                             valid_from=valid_from,
                             valid_until=valid_until,
                             token=token)
-        eth_signature = await self.eth_signer.sign_tx(withdraw)
+        eth_signature = self.eth_signer.sign_tx(withdraw)
         zk_signature = self.zk_signer.sign_tx(withdraw)
         withdraw.signature = zk_signature
         return withdraw, eth_signature
