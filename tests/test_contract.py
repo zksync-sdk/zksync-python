@@ -6,7 +6,7 @@ from zksync_sdk.zksync import ZkSync
 
 
 class TestZkSyncContract(TestCase):
-    private_key = "0xcfcf55abae35cfd18caeb3975688d3dcb4834dac21d9c03ca0b670a00028df4c"
+    private_key = "0xa045b52470d306ff78e91b0d2d92f90f7504189125a46b69423dc673fd6b4f3e"
 
     def setUp(self) -> None:
         self.account = Account.from_key(self.private_key)
@@ -17,7 +17,7 @@ class TestZkSyncContract(TestCase):
                              zksync_contract_address="0x82F67958A5474e40E1485742d648C0b0686b6e5D")
 
     def test_deposit_eth(self):
-        tx = self.zksync.deposit_eth(self.account.address, 2 * 10 ** 13)
+        tx = self.zksync.deposit_eth(self.account.address, 2 * 10 ** 12)
         assert tx['transactionHash']
 
     def test_full_exit(self):

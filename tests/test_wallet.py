@@ -10,7 +10,7 @@ from zksync_sdk.types import ChangePubKeyEcdsa, Token, TransactionWithSignature
 
 
 class TestWallet(IsolatedAsyncioTestCase):
-    private_key = "0xcfcf55abae35cfd18caeb3975688d3dcb4834dac21d9c03ca0b670a00028df4c"
+    private_key = "0xa045b52470d306ff78e91b0d2d92f90f7504189125a46b69423dc673fd6b4f3e"
 
     async def asyncSetUp(self) -> None:
         self.account = Account.from_key(self.private_key)
@@ -63,10 +63,9 @@ class TestWallet(IsolatedAsyncioTestCase):
     async def test_batch(self):
         trs = []
         for i in range(3):
-
             tr, sig = await self.wallet.build_transfer(
                 "0x21dDF51966f2A66D03998B0956fe59da1b3a179F",
-                amount=Decimal("0.0001"), token="ETH")
+                amount=Decimal("0.000001"), token="ETH")
             trs.append(TransactionWithSignature(tr, sig))
         res = await self.wallet.send_txs_batch(trs)
         assert len(res) == 3
@@ -79,7 +78,7 @@ class TestWallet(IsolatedAsyncioTestCase):
 
     async def test_withdraw(self):
         tr = await self.wallet.withdraw("0x21dDF51966f2A66D03998B0956fe59da1b3a179F",
-                                        Decimal("0.001"), "USDT")
+                                        Decimal("0.000001"), "USDT")
 
         assert tr
 
@@ -92,7 +91,7 @@ class TestWallet(IsolatedAsyncioTestCase):
 
 
 class TestEthereumProvider(IsolatedAsyncioTestCase):
-    private_key = "0xcfcf55abae35cfd18caeb3975688d3dcb4834dac21d9c03ca0b670a00028df4c"
+    private_key = "0xa045b52470d306ff78e91b0d2d92f90f7504189125a46b69423dc673fd6b4f3e"
 
     async def asyncSetUp(self) -> None:
         self.account = Account.from_key(self.private_key)
@@ -111,21 +110,21 @@ class TestEthereumProvider(IsolatedAsyncioTestCase):
             address=Web3.toChecksumAddress('0xeb8f08a975ab53e34d8a0330e0d34de942c95926'),
             id=20, symbol='USDC',
             decimals=18)
-        assert await self.ethereum_provider.approve_deposit(token, Decimal(10))
+        assert await self.ethereum_provider.approve_deposit(token, Decimal(1))
 
     async def test_full_exit(self):
         token = Token(
-            address=Web3.toChecksumAddress('0xfe1b6abc39e46cec54d275efb4b29b33be176c2a'),
-            id=20, symbol='PHNX',
+            address=Web3.toChecksumAddress('0xD2084eA2AE4bBE1424E4fe3CDE25B713632fb988'),
+            id=20, symbol='BAT',
             decimals=18)
         assert await self.ethereum_provider.full_exit(token, 6713)
 
     async def test_is_deposit_approved(self):
         token = Token(
-            address=Web3.toChecksumAddress('0xfe1b6abc39e46cec54d275efb4b29b33be176c2a'),
-            id=20, symbol='PHNX',
+            address=Web3.toChecksumAddress('0xD2084eA2AE4bBE1424E4fe3CDE25B713632fb988'),
+            id=20, symbol='BAT',
             decimals=18)
-        assert await self.ethereum_provider.is_deposit_approved(token, 10)
+        assert await self.ethereum_provider.is_deposit_approved(token, 1)
 
 
 class TestZkSyncProvider(IsolatedAsyncioTestCase):
