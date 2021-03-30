@@ -8,11 +8,11 @@ __all__ = ['EthereumSignerInterface']
 class EthereumSignerInterface(ABC):
 
     @abstractmethod
-    async def sign_tx(self, tx: EncodedTx) -> TxEthSignature:
+    def sign_tx(self, tx: EncodedTx) -> TxEthSignature:
         raise NotImplementedError
 
     @abstractmethod
-    async def sign(self, message: bytes) -> TxEthSignature:
+    def sign(self, message: bytes) -> TxEthSignature:
         raise NotImplementedError
 
     @abstractmethod
