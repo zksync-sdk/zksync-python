@@ -75,10 +75,20 @@ class Token(BaseModel):
 
     def decimal_str_amount(self, amount: int) -> str:
         d = self.decimal_amount(amount)
-        if d != Decimal(0):
-            return str(d).rstrip("0")
-        else:
-            return str(d)
+
+        # zero is the only exception where we don't add a decimal point
+        if d == 0:
+            return "0"
+
+        # Creates a string with `self.decimals` numbers after decimal point.
+        # Prevents scientific notation (string values like '1E-8').
+        # Prevents integral numbers having no decimal point in the string representation.
+        d_str = f"{d:.{self.decimals}f}"
+
+        d_str = d_str.rstrip("0")
+        if d_str[-1] == ".":
+            return d_str + "0"
+        return d_str
 
 
 class Tokens(BaseModel):
