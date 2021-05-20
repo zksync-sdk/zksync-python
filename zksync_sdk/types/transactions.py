@@ -155,9 +155,9 @@ class ChangePubKey(EncodedTx):
     nonce: int
     valid_from: int
     valid_until: int
-    eth_auth_data: Union[ChangePubKeyCREATE2, ChangePubKeyEcdsa] = None
-    eth_signature: TxEthSignature = None
-    signature: TxSignature = None
+    eth_auth_data: Union[ChangePubKeyCREATE2, ChangePubKeyEcdsa, None] = None
+    eth_signature: Optional[TxEthSignature] = None
+    signature: Optional[TxSignature] = None
 
     def human_readable_message(self) -> str:
         message = f"Set signing key: {self.new_pk_hash.replace('sync:', '').lower()}"
@@ -227,7 +227,7 @@ class Transfer(EncodedTx):
     nonce: int
     valid_from: int
     valid_until: int
-    signature: TxSignature = None
+    signature: Optional[TxSignature] = None
 
     def tx_type(self) -> int:
         return 5
@@ -277,7 +277,7 @@ class Withdraw(EncodedTx):
     valid_from: int
     valid_until: int
     token: Token
-    signature: TxSignature = None
+    signature: Optional[TxSignature] = None
 
     def tx_type(self) -> int:
         return 3
@@ -325,7 +325,7 @@ class ForcedExit(EncodedTx):
     nonce: int
     valid_from: int
     valid_until: int
-    signature: TxSignature = None
+    signature: Optional[TxSignature] = None
 
     def tx_type(self) -> int:
         return 8
