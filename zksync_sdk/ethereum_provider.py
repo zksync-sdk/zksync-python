@@ -13,7 +13,7 @@ class EthereumProvider:
         self.web3 = web3
         self.zksync = zksync
 
-    async def approve_deposit(self, token: Token, limit: Decimal = None):
+    async def approve_deposit(self, token: Token, limit: Decimal):
         contract = ERC20Contract(self.web3, self.zksync.contract_address, token.address,
                                  self.zksync.account)
         return contract.approve_deposit(token.from_decimal(limit))

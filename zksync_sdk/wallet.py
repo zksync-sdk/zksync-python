@@ -213,12 +213,12 @@ class Wallet:
 
     async def get_balance(self, token: TokenLike, type: str):
         account_state = await self.get_account_state()
-        token = await self.resolve_token(token)
+        token_obj = await self.resolve_token(token)
 
         if type == "committed":
-            token_balance = account_state.committed.balances.get(token.symbol)
+            token_balance = account_state.committed.balances.get(token_obj.symbol)
         else:
-            token_balance = account_state.verified.balances.get(token.symbol)
+            token_balance = account_state.verified.balances.get(token_obj.symbol)
         if token_balance is None:
             token_balance = 0
         return token_balance

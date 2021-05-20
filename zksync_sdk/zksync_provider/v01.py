@@ -57,6 +57,7 @@ class ZkSyncProviderV01(ZkSyncProviderInterface):
 
     async def get_account_nonce(self, address: str) -> Tuple[int, int]:
         state = await self.get_state(address)
+        assert state.id is not None, "AccountState must have ID"
         return state.id, state.get_nonce()
 
     async def get_tx_receipt(self, address: str) -> TransactionDetails:

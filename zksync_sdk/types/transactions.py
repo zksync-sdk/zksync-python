@@ -115,7 +115,7 @@ class Tokens(BaseModel):
         else:
             return None
 
-    def find(self, token: TokenLike) -> Token:
+    def find(self, token: TokenLike) -> Optional[Token]:
         result = None
         if isinstance(token, int):
             result = self.find_by_id(token)
