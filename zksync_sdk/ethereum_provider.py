@@ -1,4 +1,5 @@
 from decimal import Decimal
+from typing import Optional
 
 from web3 import Web3
 
@@ -30,7 +31,7 @@ class EthereumProvider:
     async def set_auth_pubkey_hash(self, pubkey_hash: bytes, nonce: int):
         return self.zksync.set_auth_pub_key_hash(pubkey_hash, nonce)
 
-    async def is_deposit_approved(self, token: Token, threshold: int = None) -> bool:
+    async def is_deposit_approved(self, token: Token, threshold: int) -> bool:
         contract = ERC20Contract(self.web3, self.zksync.contract_address, token.address,
                                  self.zksync.account)
         return contract.is_deposit_approved(threshold)

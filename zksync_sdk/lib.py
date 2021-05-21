@@ -1,6 +1,7 @@
 import ctypes
 from ctypes import (Structure, c_ubyte, cdll)
 import os
+from typing import Optional
 
 PRIVATE_KEY_LEN = 32
 PUBLIC_KEY_LEN = 32
@@ -34,7 +35,7 @@ class ZksSignature(Structure):
 
 class ZkSyncLibrary:
 
-    def __init__(self, library_path: str = None):
+    def __init__(self, library_path: Optional[str] = None):
         if library_path is None:
             library_path = os.environ["ZK_SYNC_LIBRARY_PATH"]
         self.lib = cdll.LoadLibrary(library_path)

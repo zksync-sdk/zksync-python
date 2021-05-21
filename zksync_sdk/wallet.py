@@ -43,8 +43,8 @@ class Wallet:
         return await self.zk_provider.submit_txs_batch(transactions, signatures)
 
     async def set_signing_key(self, fee_token: TokenLike, *,
-                              eth_auth_data: Union[ChangePubKeyCREATE2, ChangePubKeyEcdsa] = None,
-                              fee: Decimal = None, nonce: int = None,
+                              eth_auth_data: Union[ChangePubKeyCREATE2, ChangePubKeyEcdsa, None] = None,
+                              fee: Optional[Decimal] = None, nonce: Optional[int] = None,
                               valid_from=DEFAULT_VALID_FROM, valid_until=DEFAULT_VALID_UNTIL):
         change_pub_key, eth_signature = await self.build_change_pub_key(fee_token,
                                                                         eth_auth_data=eth_auth_data,
@@ -56,8 +56,8 @@ class Wallet:
 
     async def build_change_pub_key(
         self, fee_token: TokenLike, *,
-        fee: Decimal = None, nonce: int = None,
-        eth_auth_data: Union[ChangePubKeyCREATE2, ChangePubKeyEcdsa] = None,
+        fee: Optional[Decimal] = None, nonce: Optional[int] = None,
+        eth_auth_data: Union[ChangePubKeyCREATE2, ChangePubKeyEcdsa, None] = None,
         valid_from=DEFAULT_VALID_FROM, valid_until=DEFAULT_VALID_UNTIL
     ):
         account_id, new_nonce = await self.zk_provider.get_account_nonce(self.address())
@@ -110,7 +110,7 @@ class Wallet:
 
         return change_pub_key, eth_signature
 
-    async def forced_exit(self, target: str, token: TokenLike, fee: Decimal = None,
+    async def forced_exit(self, target: str, token: TokenLike, fee: Optional[Decimal] = None,
                           valid_from=DEFAULT_VALID_FROM, valid_until=DEFAULT_VALID_UNTIL) -> str:
         transfer, eth_signature = await self.build_forced_exit(target, token, fee,
                                                                valid_from, valid_until)
@@ -121,7 +121,7 @@ class Wallet:
         self,
         target: str,
         token: TokenLike,
-        fee: Decimal = None,
+        fee: Optional[Decimal] = None,
         valid_from=DEFAULT_VALID_FROM,
         valid_until=DEFAULT_VALID_UNTIL
     ) -> Tuple[ForcedExit, TxEthSignature]:
@@ -149,7 +149,7 @@ class Wallet:
         return self.eth_signer.address()
 
     async def build_transfer(self, to: str, amount: Decimal, token: TokenLike,
-                             fee: Decimal = None,
+                             fee: Optional[Decimal] = None,
                              valid_from=DEFAULT_VALID_FROM,
                              valid_until=DEFAULT_VALID_UNTIL) -> Tuple[Transfer, TxEthSignature]:
         account_id, nonce = await self.zk_provider.get_account_nonce(self.address())
@@ -172,7 +172,7 @@ class Wallet:
         return transfer, eth_signature
 
     async def transfer(self, to: str, amount: Decimal, token: TokenLike,
-                       fee: Decimal = None,
+                       fee: Optional[Decimal] = None,
                        valid_from=DEFAULT_VALID_FROM, valid_until=DEFAULT_VALID_UNTIL) -> str:
         transfer, eth_signature = await self.build_transfer(to, amount, token, fee,
                                                             valid_from, valid_until)
@@ -180,7 +180,7 @@ class Wallet:
         return await self.send_signed_transaction(transfer, eth_signature)
 
     async def build_withdraw(self, eth_address: str, amount: Decimal, token: TokenLike,
-                             fee: Decimal = None, fast: bool = False,
+                             fee: Optional[Decimal] = None, fast: bool = False,
                              valid_from=DEFAULT_VALID_FROM,
                              valid_until=DEFAULT_VALID_UNTIL) -> Tuple[Withdraw, TxEthSignature]:
         account_id, nonce = await self.zk_provider.get_account_nonce(self.address())
@@ -204,7 +204,7 @@ class Wallet:
         return withdraw, eth_signature
 
     async def withdraw(self, eth_address: str, amount: Decimal, token: TokenLike,
-                       fee: Decimal = None, fast: bool = False,
+                       fee: Optional[Decimal] = None, fast: bool = False,
                        valid_from=DEFAULT_VALID_FROM, valid_until=DEFAULT_VALID_UNTIL) -> str:
 
         withdraw, eth_signature = await self.build_withdraw(eth_address, amount, token, fee, fast,
