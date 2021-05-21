@@ -11,7 +11,7 @@ class Contract:
     def __init__(self, contract_address: str, web3: Web3, account: BaseAccount, abi):
         self.contract_address = contract_address
         self.web3 = web3
-        self.contract = self.web3.eth.contract(self.contract_address, abi=abi)  # type: ignore
+        self.contract = self.web3.eth.contract(self.contract_address, abi=abi)  # type: ignore[call-overload]
         self.account = account
 
     def _call_method(self, method_name, *args, amount=None, **kwargs):

@@ -72,21 +72,21 @@ class Wallet:
 
         if fee is None:
             if eth_auth_type == ChangePubKeyTypes.ecdsa:
-                fee = await self.zk_provider.get_transaction_fee(FeeTxType.change_pub_key_ecdsa,
+                fee_obj = await self.zk_provider.get_transaction_fee(FeeTxType.change_pub_key_ecdsa,
                                                                  self.address(),
                                                                  fee_token)
             elif eth_auth_type == ChangePubKeyTypes.onchain:
-                fee = await self.zk_provider.get_transaction_fee(FeeTxType.change_pub_key_onchain,
+                fee_obj = await self.zk_provider.get_transaction_fee(FeeTxType.change_pub_key_onchain,
                                                                  self.address(),
                                                                  fee_token)
-            elif eth_auth_type == ChangePubKeyTypes.create2:
-                fee = await self.zk_provider.get_transaction_fee(FeeTxType.change_pub_key_create2,
+            else:  # eth_auth_type == ChangePubKeyTypes.create2
+                fee_obj = await self.zk_provider.get_transaction_fee(FeeTxType.change_pub_key_create2,
                                                                  self.address(),
                                                                  fee_token)
 
-            fee = fee.total_fee
+            fee_int = fee_obj.total_fee
         else:
-            fee = token.from_decimal(fee)
+            fee_int = token.from_decimal(fee)
 
         new_pubkey_hash = self.zk_signer.pubkey_hash_str()
         change_pub_key = ChangePubKey(
@@ -94,7 +94,7 @@ class Wallet:
             account_id=account_id,
             new_pk_hash=new_pubkey_hash,
             token=token,
-            fee=fee,
+            fee=fee_int,
             nonce=nonce,
             valid_until=valid_until,
             valid_from=valid_from,
@@ -126,19 +126,19 @@ class Wallet:
         valid_until=DEFAULT_VALID_UNTIL
     ) -> Tuple[ForcedExit, TxEthSignature]:
         account_id, nonce = await self.zk_provider.get_account_nonce(self.address())
-        token = await self.resolve_token(token)
+        token_obj = await self.resolve_token(token)
         if fee is None:
-            fee = await self.zk_provider.get_transaction_fee(FeeTxType.withdraw, target, token.id)
-            fee = fee.total_fee
+            fee_obj = await self.zk_provider.get_transaction_fee(FeeTxType.withdraw, target, token_obj.id)
+            fee_int = fee_obj.total_fee
         else:
-            fee = token.from_decimal(fee)
+            fee_int = token_obj.from_decimal(fee)
         forced_exit = ForcedExit(initiator_account_id=account_id,
                                  target=target,
-                                 fee=fee,
+                                 fee=fee_int,
                                  nonce=nonce,
                                  valid_from=valid_from,
                                  valid_until=valid_until,
-                                 token=token)
+                                 token=token_obj)
         eth_signature = self.eth_signer.sign_tx(forced_exit)
         zk_signature = self.zk_signer.sign_tx(forced_exit)
         forced_exit.signature = zk_signature
@@ -153,19 +153,19 @@ class Wallet:
                              valid_from=DEFAULT_VALID_FROM,
                              valid_until=DEFAULT_VALID_UNTIL) -> Tuple[Transfer, TxEthSignature]:
         account_id, nonce = await self.zk_provider.get_account_nonce(self.address())
-        token = await self.resolve_token(token)
+        token_obj = await self.resolve_token(token)
         if fee is None:
-            fee = await self.zk_provider.get_transaction_fee(FeeTxType.transfer, to, token.id)
-            fee = fee.total_fee
+            fee_obj = await self.zk_provider.get_transaction_fee(FeeTxType.transfer, to, token_obj.id)
+            fee_int = fee_obj.total_fee
         else:
-            fee = token.from_decimal(fee)
+            fee_int = token_obj.from_decimal(fee)
         transfer = Transfer(account_id=account_id, from_address=self.address(),
                             to_address=to,
-                            amount=token.from_decimal(amount), fee=fee,
+                            amount=token_obj.from_decimal(amount), fee=fee_int,
                             nonce=nonce,
                             valid_from=valid_from,
                             valid_until=valid_until,
-                            token=token)
+                            token=token_obj)
         eth_signature = self.eth_signer.sign_tx(transfer)
         zk_signature = self.zk_signer.sign_tx(transfer)
         transfer.signature = zk_signature
@@ -182,22 +182,22 @@ class Wallet:
     async def build_withdraw(self, eth_address: str, amount: Decimal, token: TokenLike,
                              fee: Decimal = None, fast: bool = False,
                              valid_from=DEFAULT_VALID_FROM,
-                             valid_until=DEFAULT_VALID_UNTIL) -> (Withdraw, TxEthSignature):
+                             valid_until=DEFAULT_VALID_UNTIL) -> Tuple[Withdraw, TxEthSignature]:
         account_id, nonce = await self.zk_provider.get_account_nonce(self.address())
-        token = await self.resolve_token(token)
+        token_obj = await self.resolve_token(token)
         if fee is None:
             tx_type = FeeTxType.fast_withdraw if fast else FeeTxType.withdraw
-            fee = await self.zk_provider.get_transaction_fee(tx_type, eth_address, token.id)
-            fee = fee.total_fee
+            fee_obj = await self.zk_provider.get_transaction_fee(tx_type, eth_address, token_obj.id)
+            fee_int = fee_obj.total_fee
         else:
-            fee = token.from_decimal(fee)
+            fee_int = token_obj.from_decimal(fee)
         withdraw = Withdraw(account_id=account_id, from_address=self.address(),
                             to_address=eth_address,
-                            amount=token.from_decimal(amount), fee=fee,
+                            amount=token_obj.from_decimal(amount), fee=fee_int,
                             nonce=nonce,
                             valid_from=valid_from,
                             valid_until=valid_until,
-                            token=token)
+                            token=token_obj)
         eth_signature = self.eth_signer.sign_tx(withdraw)
         zk_signature = self.zk_signer.sign_tx(withdraw)
         withdraw.signature = zk_signature
