@@ -79,7 +79,8 @@ class Wallet:
                 fee_obj = await self.zk_provider.get_transaction_fee(FeeTxType.change_pub_key_onchain,
                                                                  self.address(),
                                                                  fee_token)
-            else:  # eth_auth_type == ChangePubKeyTypes.create2
+            else:
+                assert eth_auth_type == ChangePubKeyTypes.create2, "invalid eth_auth_type"
                 fee_obj = await self.zk_provider.get_transaction_fee(FeeTxType.change_pub_key_create2,
                                                                  self.address(),
                                                                  fee_token)
