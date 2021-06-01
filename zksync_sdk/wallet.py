@@ -7,7 +7,7 @@ from zksync_sdk.types import (ChangePubKey, ChangePubKeyCREATE2, ChangePubKeyEcd
                               ChangePubKeyTypes, EncodedTx,
                               ForcedExit, Token,
                               TokenLike, Tokens, TransactionWithSignature, Transfer,
-                              TxEthSignature, Withdraw, )
+                              TxEthSignature, Withdraw, MintNFT, )
 from zksync_sdk.zksync_provider import FeeTxType, ZkSyncProviderInterface
 from zksync_sdk.zksync_signer import ZkSyncSigner
 

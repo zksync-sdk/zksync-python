@@ -361,6 +361,48 @@ class ForcedExit(EncodedTx):
 
 
 @dataclass
+class MintNFT(EncodedTx):
+    creator_id: int
+    creator_address: str
+    content_hash: str
+    recipient: str
+    fee: int
+    fee_token: Token
+    nonce: int
+    signature: TxSignature = None
+
+    def tx_type(self) -> int:
+        return 9
+
+    def encoded_message(self) -> bytes:
+        return b"".join([
+            int_to_bytes(self.tx_type(), 1),
+            serialize_account_id(self.creator_id),
+            serialize_address(self.creator_address),
+            bytes.fromhex(self.content_hash),
+            serialize_address(self.recipient),
+            serialize_token_id(self.fee_token.id),
+            serialize_nonce(self.nonce),
+        ])
+
+    def human_readable_message(self) -> str:
+        message = f"MintNFT {self.content_hash} for: {self.recipient.lower()}\nFee: {self.fee_token.decimal_str_amount(self.fee)} {self.fee_token.symbol}\nNonce: {self.nonce}"
+        return message
+
+    def dict(self):
+        return {
+            "type":               "MintNFT",
+            "creatorId":          self.creator_id,
+            "creatorAddress":     self.creator_address,
+            "contentHash":        self.content_hash,
+            "recipient":          self.recipient,
+            "feeToken":           self.fee_token.id,
+            "fee":                self.fee,
+            "nonce":              self.nonce,
+            "signature":          self.signature.dict(),
+        }
+
+@dataclass
 class TransactionWithSignature:
     tx: EncodedTx
     signature: TxEthSignature
