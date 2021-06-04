@@ -143,7 +143,39 @@ class Wallet:
         zk_signature = self.zk_signer.sign_tx(forced_exit)
         forced_exit.signature = zk_signature
 
-        return forced_exit, eth_signature
+    async def mint_nft(self, target: str, content_hash: str, recipient: str,
+                       token: TokenLike,fee: Decimal = None) -> str:
+        mint_nft, eth_signature = await self.build_mint_nft(target, content_hash, recipient, token, fee)
+
+        return await self.send_signed_transaction(mint_nft, eth_signature)
+
+    async def build_mint_nft(
+        self,
+        target: str,
+        content_hash: str,
+        recipient: str,
+        token: TokenLike,
+        fee: Decimal = None
+    ) -> Tuple[MintNFT, TxEthSignature]:
+        account_id, nonce = await self.zk_provider.get_account_nonce(self.address())
+        token = await self.resolve_token(token)
+        if fee is None:
+            fee = await self.zk_provider.get_transaction_fee(FeeTxType.withdraw, target, token.id)
+            fee = fee.total_fee
+        else:
+            fee = token.from_decimal(fee)
+        mint_nft = MintNFT(creator_id=account_id,
+                           creator_address=self.address(),
+                           content_hash=content_hash,
+                           recipient=recipient,
+                           fee=fee,
+                           fee_token=token,
+                           nonce=nonce)
+        eth_signature = self.eth_signer.sign_tx(mint_nft)
+        zk_signature = self.zk_signer.sign_tx(mint_nft)
+        mint_nft.signature = zk_signature
+
+        return mint_nft, eth_signature
 
     def address(self):
         return self.eth_signer.address()
@@ -229,7 +261,7 @@ class Wallet:
     async def is_signing_key_set(self) -> bool:
         account_state = await self.get_account_state()
         signer_pub_key_hash = self.zk_signer.pubkey_hash_str()
-        return account_state.id is not None and\
+        return account_state.id is not None and \
                account_state.committed.pub_key_hash == signer_pub_key_hash
 
     async def resolve_token(self, token: TokenLike) -> Token:
