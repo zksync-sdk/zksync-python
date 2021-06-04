@@ -382,6 +382,7 @@ class MintNFT(EncodedTx):
             bytes.fromhex(self.content_hash),
             serialize_address(self.recipient),
             serialize_token_id(self.fee_token.id),
+            packed_fee_checked(self.fee),
             serialize_nonce(self.nonce),
         ])
 
