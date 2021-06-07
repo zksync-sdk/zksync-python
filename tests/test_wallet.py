@@ -76,6 +76,11 @@ class TestWallet(IsolatedAsyncioTestCase):
 
         assert tr
 
+    async def test_mint_nft(self):
+        tr = await self.wallet.mint_nft("hash", "0x21dDF51966f2A66D03998B0956fe59da1b3a179F")
+
+        assert tr
+
     async def test_withdraw(self):
         tr = await self.wallet.withdraw("0x21dDF51966f2A66D03998B0956fe59da1b3a179F",
                                         Decimal("0.000001"), "USDT")

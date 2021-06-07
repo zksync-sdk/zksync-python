@@ -143,15 +143,14 @@ class Wallet:
         zk_signature = self.zk_signer.sign_tx(forced_exit)
         forced_exit.signature = zk_signature
 
-    async def mint_nft(self, target: str, content_hash: str, recipient: str,
+    async def mint_nft(self, content_hash: str, recipient: str,
                        token: TokenLike,fee: Decimal = None) -> str:
-        mint_nft, eth_signature = await self.build_mint_nft(target, content_hash, recipient, token, fee)
+        mint_nft, eth_signature = await self.build_mint_nft(content_hash, recipient, token, fee)
 
         return await self.send_signed_transaction(mint_nft, eth_signature)
 
     async def build_mint_nft(
         self,
-        target: str,
         content_hash: str,
         recipient: str,
         token: TokenLike,
@@ -160,7 +159,7 @@ class Wallet:
         account_id, nonce = await self.zk_provider.get_account_nonce(self.address())
         token = await self.resolve_token(token)
         if fee is None:
-            fee = await self.zk_provider.get_transaction_fee(FeeTxType.withdraw, target, token.id)
+            fee = await self.zk_provider.get_transaction_fee(FeeTxType.withdraw, recipient, token.id)
             fee = fee.total_fee
         else:
             fee = token.from_decimal(fee)
