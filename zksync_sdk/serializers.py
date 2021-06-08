@@ -184,7 +184,7 @@ def serialize_token_id(token_id: int):
         raise WrongValueError
     if token_id > MAX_NUMBER_OF_TOKENS:
         raise WrongValueError
-    return int_to_bytes(token_id, 2)
+    return int_to_bytes(token_id, 4)
 
 
 def serialize_account_id(account_id: int):

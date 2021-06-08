@@ -1,4 +1,5 @@
 from typing import Any, Dict, Optional
+from .transactions import NFT
 
 from pydantic import BaseModel
 
@@ -24,6 +25,8 @@ class State(BaseModel):
     nonce: int
     pub_key_hash: str
     balances: Dict[str, int]
+    nfts: Dict[str, NFT]
+    mintedNfts: Dict[str, NFT]
 
     class Config:
         alias_generator = to_camel

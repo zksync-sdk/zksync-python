@@ -90,6 +90,18 @@ class Token(BaseModel):
             return d_str + "0"
         return d_str
 
+class NFT(BaseModel):
+    id: int
+    symbol: str
+    creator_id: int
+    content_hash: str
+    creator_address: str
+    serial_id: int
+    address: str
+
+    def decimal_amount(self, amount: int) -> Decimal:
+        return Decimal(amount)*Decimal(10).scaleb(-1)
+
 
 class Tokens(BaseModel):
     tokens: List[Token]
@@ -401,6 +413,55 @@ class MintNFT(EncodedTx):
             "fee":                self.fee,
             "nonce":              self.nonce,
             "signature":          self.signature.dict(),
+        }
+
+@dataclass
+class WithdrawNFT(EncodedTx):
+    account_id: int
+    from_address: str
+    to_address: str
+    fee_token: Token
+    fee: int
+    nonce: int
+    valid_from: int
+    valid_until: int
+    token_id: int
+    signature: TxSignature = None
+
+    def tx_type(self) -> int:
+        return 10
+
+    def encoded_message(self) -> bytes:
+        return b"".join([
+            int_to_bytes(self.tx_type(), 1),
+            serialize_account_id(self.account_id),
+            serialize_address(self.from_address),
+            serialize_address(self.to_address),
+            serialize_token_id(self.token_id),
+            serialize_token_id(self.fee_token.id),
+            packed_fee_checked(self.fee),
+            serialize_nonce(self.nonce),
+            serialize_timestamp(self.valid_from),
+            serialize_timestamp(self.valid_until)
+        ])
+
+    def human_readable_message(self) -> str:
+        message = f"WithdrawNFT {self.token_id} to: {self.to_address.lower()}\nFee: {self.fee_token.decimal_str_amount(self.fee)} {self.fee_token.symbol}\nNonce: {self.nonce}"
+        return message
+
+    def dict(self):
+        return {
+            "type":                 "WithdrawNFT",
+            "accountId":            self.account_id,
+            "fromAddress":          self.from_address,
+            "toAddress":            self.to_address,
+            "feeToken":             self.fee_token,
+            "fee":                  self.fee,
+            "nonce":                self.nonce,
+            "validFrom":            self.valid_from,
+            "validUntil":           self.valid_until,
+            "tokenId":              self.token_id,
+            "signature":            self.signature.dict(),
         }
 
 @dataclass
