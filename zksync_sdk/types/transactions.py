@@ -433,7 +433,7 @@ class WithdrawNFT(EncodedTx):
 
     def encoded_message(self) -> bytes:
         return b"".join([
-            int_to_bytes(self.tx_type(), 1),
+            int_to_bytes(self.tx_type(), 2),
             serialize_account_id(self.account_id),
             serialize_address(self.from_address),
             serialize_address(self.to_address),

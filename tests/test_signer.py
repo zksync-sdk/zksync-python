@@ -52,7 +52,7 @@ class ZkSyncSignerTest(TestCase):
         tr = MintNFT(
             creator_id=44,
             creator_address="0xedE35562d3555e61120a151B3c8e8e91d83a378a",
-            content_hash="0x0000000000000000000000000000000000000000000000000000000000000123",
+            content_hash="0000000000000000000000000000000000000000000000000000000000000123",
             recipient="0x19aa2ed8712072e918632259780e587698ef58df",
             fee=1000000,
             fee_token=Token.eth(),
@@ -74,7 +74,9 @@ class ZkSyncSignerTest(TestCase):
             token_id=100000
         )
         res = "f5010000002cede35562d3555e61120a151b3c8e8e91d83a378a19aa2ed8712072e918632259780e587698ef58df000186a0000000007d030000000c000000000000000000000000ffffffff"
-        assert tr.encoded_message().hex() == res
+        result = tr.encoded_message().hex();
+        print("result: ", result)
+        assert result == res
 
     def test_pack(self):
         amounts = [0, 1, 2047, 2047000, 1000000000000000000000000000000000]
