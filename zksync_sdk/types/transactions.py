@@ -16,6 +16,8 @@ DEFAULT_TOKEN_ADDRESS = "0x0000000000000000000000000000000000000000"
 
 TokenLike = Union[str, int]
 
+TRANSACTION_VERSION = 0x01
+
 
 class ChangePubKeyTypes(Enum):
     onchain = "Onchain"
@@ -179,7 +181,8 @@ class ChangePubKey(EncodedTx):
 
     def encoded_message(self) -> bytes:
         return b"".join([
-            int_to_bytes(self.tx_type(), 1),
+            int_to_bytes(0xff - self.tx_type(), 1),
+            int_to_bytes(TRANSACTION_VERSION, 1),
             serialize_account_id(self.account_id),
             serialize_address(self.account),
             serialize_address(self.new_pk_hash),
@@ -250,7 +253,8 @@ class Transfer(EncodedTx):
 
     def encoded_message(self) -> bytes:
         return b"".join([
-            int_to_bytes(self.tx_type(), 1),
+            int_to_bytes(0xff - self.tx_type(), 1),
+            int_to_bytes(TRANSACTION_VERSION, 1),
             serialize_account_id(self.account_id),
             serialize_address(self.from_address),
             serialize_address(self.to_address),
@@ -300,7 +304,8 @@ class Withdraw(EncodedTx):
 
     def encoded_message(self) -> bytes:
         return b"".join([
-            int_to_bytes(self.tx_type(), 1),
+            int_to_bytes(0xff - self.tx_type(), 1),
+            int_to_bytes(TRANSACTION_VERSION, 1),
             serialize_account_id(self.account_id),
             serialize_address(self.from_address),
             serialize_address(self.to_address),
@@ -344,7 +349,8 @@ class ForcedExit(EncodedTx):
 
     def encoded_message(self) -> bytes:
         return b"".join([
-            int_to_bytes(self.tx_type(), 1),
+            int_to_bytes(0xff - self.tx_type(), 1),
+            int_to_bytes(TRANSACTION_VERSION, 1),
             serialize_account_id(self.initiator_account_id),
             serialize_address(self.target),
             serialize_token_id(self.token.id),
@@ -388,7 +394,8 @@ class MintNFT(EncodedTx):
 
     def encoded_message(self) -> bytes:
         return b"".join([
-            int_to_bytes(self.tx_type(), 1),
+            int_to_bytes(0xff - self.tx_type(), 1),
+            int_to_bytes(TRANSACTION_VERSION, 1),
             serialize_account_id(self.creator_id),
             serialize_address(self.creator_address),
             bytes.fromhex(self.content_hash),
@@ -433,7 +440,8 @@ class WithdrawNFT(EncodedTx):
 
     def encoded_message(self) -> bytes:
         return b"".join([
-            int_to_bytes(self.tx_type(), 2),
+            int_to_bytes(0xff - self.tx_type(), 1),
+            int_to_bytes(TRANSACTION_VERSION, 1),
             serialize_account_id(self.account_id),
             serialize_address(self.from_address),
             serialize_address(self.to_address),
