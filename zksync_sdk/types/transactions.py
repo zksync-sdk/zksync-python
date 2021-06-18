@@ -100,7 +100,7 @@ class NFT(BaseModel):
     address: str
 
     def decimal_amount(self, amount: int) -> Decimal:
-        return Decimal(amount)*Decimal(10).scaleb(-1)
+        return Decimal(amount)
 
 
 class Tokens(BaseModel):
