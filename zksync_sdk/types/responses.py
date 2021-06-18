@@ -26,7 +26,7 @@ class State(BaseModel):
     pub_key_hash: str
     balances: Dict[str, int]
     nfts: Dict[str, NFT]
-    mintedNfts: Dict[str, NFT]
+    mintednfts: Dict[str, NFT]
 
     class Config:
         alias_generator = to_camel
