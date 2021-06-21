@@ -92,18 +92,6 @@ class Token(BaseModel):
             return d_str + "0"
         return d_str
 
-class NFT(BaseModel):
-    id: int
-    symbol: str
-    creator_id: int
-    content_hash: str
-    creator_address: str
-    serial_id: int
-    address: str
-
-    def decimal_amount(self, amount: int) -> Decimal:
-        return Decimal(amount)
-
 
 class Tokens(BaseModel):
     tokens: List[Token]
