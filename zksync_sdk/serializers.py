@@ -209,3 +209,9 @@ def serialize_address(address: str) -> bytes:
     if len(address_bytes) != 20:
         raise WrongValueError
     return address_bytes
+
+
+def serialize_content_hash(content_hash: str) -> bytes:
+    if content_hash.startswith('0x'):
+        content_hash = content_hash[2:]
+    return bytes.fromhex(content_hash)

@@ -8,7 +8,7 @@ from pydantic import BaseModel
 
 from zksync_sdk.serializers import (int_to_bytes, packed_amount_checked, packed_fee_checked,
                                     serialize_account_id,
-                                    serialize_address, serialize_nonce, serialize_timestamp,
+                                    serialize_address, serialize_content_hash, serialize_nonce, serialize_timestamp,
                                     serialize_token_id, )
 from zksync_sdk.types.signatures import TxEthSignature, TxSignature
 
@@ -386,7 +386,7 @@ class MintNFT(EncodedTx):
             int_to_bytes(TRANSACTION_VERSION, 1),
             serialize_account_id(self.creator_id),
             serialize_address(self.creator_address),
-            bytes.fromhex(self.content_hash),
+            serialize_content_hash(self.content_hash),
             serialize_address(self.recipient),
             serialize_token_id(self.fee_token.id),
             packed_fee_checked(self.fee),
