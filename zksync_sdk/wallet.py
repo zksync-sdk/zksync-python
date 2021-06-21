@@ -143,6 +143,8 @@ class Wallet:
         zk_signature = self.zk_signer.sign_tx(forced_exit)
         forced_exit.signature = zk_signature
 
+        return forced_exit, eth_signature
+
     async def mint_nft(self, content_hash: str, recipient: str,
                        token: TokenLike, fee: Decimal = None) -> str:
         mint_nft, eth_signature = await self.build_mint_nft(content_hash, recipient, token, fee)
