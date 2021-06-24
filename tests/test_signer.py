@@ -40,7 +40,9 @@ class ZkSyncSignerTest(TestCase):
         assert tr.encoded_message().hex() == res
 
     def test_order_bytes(self):
-        order = Order(account_id=6, nonce=18, token_sell=Token(id=0), token_buy=Token(id=2),
+        token1 = Token.eth()
+        token2 = Token(id=2, symbol='', address='', decimals=0) # only id matters
+        order = Order(account_id=6, nonce=18, token_sell=token1, token_buy=token2,
                       ratio=Fraction(1, 2), amount=1000000,
                       recipient='0x823b6a996cea19e0c41e250b20e2e804ea72ccdf',
                       valid_from=0, valid_until=4294967295)
@@ -48,17 +50,20 @@ class ZkSyncSignerTest(TestCase):
         assert order.encoded_message().hex() == res
 
     def test_swap_bytes(self):
-        order1 = Order(account_id=6, nonce=18, token_sell=Token(id=1), token_buy=Token(id=2),
+        token1 = Token(id=1, symbol='', address='', decimals=0) # only id matters
+        token2 = Token(id=2, symbol='', address='', decimals=0) # only id matters
+        token3 = Token(id=3, symbol='', address='', decimals=0) # only id matters
+        order1 = Order(account_id=6, nonce=18, token_sell=token1, token_buy=token2,
                       ratio=Fraction(1, 2), amount=1000000,
                       recipient='0x823b6a996cea19e0c41e250b20e2e804ea72ccdf',
                       valid_from=0, valid_until=4294967295)
-        order2 = Order(account_id=44, nonce=101, token_sell=Token(id=2), token_buy=Token(id=1),
+        order2 = Order(account_id=44, nonce=101, token_sell=token2, token_buy=token1,
                       ratio=Fraction(3, 1), amount=2500000,
                       recipient='0x63adbb48d1bc2cf54562910ce54b7ca06b87f319',
                       valid_from=0, valid_until=4294967295)
         swap = Swap(orders=(order1, order2), nonce=1, amounts=(1000000, 2500000),
                     submitter_id=5, submitter_address="0xedE35562d3555e61120a151B3c8e8e91d83a378a",
-                    fee_token=Token(id=3), fee=123)
+                    fee_token=token3, fee=123)
         res = "0xf40100000005ede35562d3555e61120a151b3c8e8e91d83a378a000000017b1e76f6f124bae1917435a02cfbf5571d79ddb8380bc4bf4858c9e9969487000000030f600001e848000004c4b400"
         assert swap.encoded_message().hex() == res
 

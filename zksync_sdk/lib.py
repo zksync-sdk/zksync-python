@@ -40,7 +40,7 @@ class ZksOrdersHash(Structure):
 
 class ZksOrders(Structure):
     _fields_ = [
-        ("data", c_ubyte * ORDER_LEN * 2),
+        ("data", c_ubyte * (ORDER_LEN * 2)),
     ]
 
 
