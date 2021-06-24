@@ -7,7 +7,7 @@ from zksync_sdk.types import (ChangePubKey, ChangePubKeyCREATE2, ChangePubKeyEcd
                               ChangePubKeyTypes, EncodedTx,
                               ForcedExit, Token,
                               TokenLike, Tokens, TransactionWithSignature, Transfer,
-                              TxEthSignature, Withdraw, )
+                              TxEthSignature, Withdraw, MintNFT, WithdrawNFT, NFT, )
 from zksync_sdk.zksync_provider import FeeTxType, ZkSyncProviderInterface
 from zksync_sdk.zksync_signer import ZkSyncSigner
 
@@ -145,6 +145,82 @@ class Wallet:
 
         return forced_exit, eth_signature
 
+    async def mint_nft(self, content_hash: str, recipient: str,
+                       token: TokenLike, fee: Decimal = None) -> str:
+        mint_nft, eth_signature = await self.build_mint_nft(content_hash, recipient, token, fee)
+
+        return await self.send_signed_transaction(mint_nft, eth_signature)
+
+    async def build_mint_nft(
+        self,
+        content_hash: str,
+        recipient: str,
+        token: TokenLike,
+        fee: Decimal = None
+    ) -> Tuple[MintNFT, TxEthSignature]:
+        account_id, nonce = await self.zk_provider.get_account_nonce(self.address())
+        token = await self.resolve_token(token)
+        if fee is None:
+            fee = await self.zk_provider.get_transaction_fee(FeeTxType.mint_nft, recipient, token.id)
+            fee = fee.total_fee
+        else:
+            fee = token.from_decimal(fee)
+        mint_nft = MintNFT(creator_id=account_id,
+                           creator_address=self.address(),
+                           content_hash=content_hash,
+                           recipient=recipient,
+                           fee=fee,
+                           fee_token=token,
+                           nonce=nonce)
+        eth_signature = self.eth_signer.sign_tx(mint_nft)
+        zk_signature = self.zk_signer.sign_tx(mint_nft)
+        mint_nft.signature = zk_signature
+
+        return mint_nft, eth_signature
+
+    async def withdraw_nft(self,
+                           to_address: str,
+                           nft_token: NFT,
+                           fee_token: TokenLike,
+                           fee: Decimal = None,
+                           valid_from=DEFAULT_VALID_FROM,
+                           valid_until=DEFAULT_VALID_UNTIL) -> str:
+        withdraw_nft, eth_signature = await self.build_withdraw_nft(to_address, nft_token, fee_token, fee,
+                                                                valid_from, valid_until)
+
+        return await self.send_signed_transaction(withdraw_nft, eth_signature)
+
+    async def build_withdraw_nft(self,
+                                 to_address: str,
+                                 nft_token: NFT,
+                                 fee_token: TokenLike,
+                                 fee: Decimal = None,
+                                 valid_from=DEFAULT_VALID_FROM,
+                                 valid_until=DEFAULT_VALID_UNTIL) -> Tuple[WithdrawNFT, TxEthSignature]:
+        account_id, nonce = await self.zk_provider.get_account_nonce(self.address())
+        fee_token = await self.resolve_token(fee_token)
+        if fee is None:
+            fee = await self.zk_provider.get_transaction_fee(FeeTxType.withdraw_nft, to_address, fee_token.id)
+            fee = fee.total_fee
+        else:
+            fee = nft_token.from_decimal(fee)
+        withdraw_nft = WithdrawNFT(
+            account_id=account_id,
+            from_address=self.address(),
+            to_address=to_address,
+            fee_token=fee_token,
+            fee=fee,
+            nonce=nonce,
+            valid_from=valid_from,
+            valid_until=valid_until,
+            token_id=nft_token.id)
+        eth_signature = self.eth_signer.sign_tx(withdraw_nft)
+        zk_signature = self.zk_signer.sign_tx(withdraw_nft)
+        withdraw_nft.signature = zk_signature
+
+        return withdraw_nft, eth_signature
+
+
     def address(self):
         return self.eth_signer.address()
 
@@ -229,7 +305,7 @@ class Wallet:
     async def is_signing_key_set(self) -> bool:
         account_state = await self.get_account_state()
         signer_pub_key_hash = self.zk_signer.pubkey_hash_str()
-        return account_state.id is not None and\
+        return account_state.id is not None and \
                account_state.committed.pub_key_hash == signer_pub_key_hash
 
     async def resolve_token(self, token: TokenLike) -> Token:

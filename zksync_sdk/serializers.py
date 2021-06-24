@@ -5,7 +5,7 @@ AMOUNT_MANTISSA_BIT_WIDTH = 35
 FEE_EXPONENT_BIT_WIDTH = 5
 FEE_MANTISSA_BIT_WIDTH = 11
 MAX_NUMBER_OF_ACCOUNTS = 2 ** 24
-MAX_NUMBER_OF_TOKENS = 128
+MAX_NUMBER_OF_TOKENS = 2 ** 32 - 1
 
 
 class SerializationError(Exception):
@@ -184,7 +184,7 @@ def serialize_token_id(token_id: int):
         raise WrongValueError
     if token_id > MAX_NUMBER_OF_TOKENS:
         raise WrongValueError
-    return int_to_bytes(token_id, 2)
+    return int_to_bytes(token_id, 4)
 
 
 def serialize_account_id(account_id: int):
@@ -209,3 +209,9 @@ def serialize_address(address: str) -> bytes:
     if len(address_bytes) != 20:
         raise WrongValueError
     return address_bytes
+
+
+def serialize_content_hash(content_hash: str) -> bytes:
+    if content_hash.startswith('0x'):
+        content_hash = content_hash[2:]
+    return bytes.fromhex(content_hash)

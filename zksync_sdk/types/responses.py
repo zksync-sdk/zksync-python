@@ -1,4 +1,5 @@
 from typing import Any, Dict, Optional
+from decimal import Decimal
 
 from pydantic import BaseModel
 
@@ -19,11 +20,27 @@ class Balance(BaseModel):
 class Depositing(BaseModel):
     balances: Dict[str, Balance]
 
+class NFT(BaseModel):
+    id: int
+    symbol: str
+    creator_id: int
+    content_hash: str
+    creator_address: str
+    serial_id: int
+    address: str
+
+    def decimal_amount(self, amount: int) -> Decimal:
+        return Decimal(amount)
+
+    class Config:
+        alias_generator = to_camel
 
 class State(BaseModel):
     nonce: int
     pub_key_hash: str
     balances: Dict[str, int]
+    nfts: Dict[str, NFT]
+    minted_nfts: Dict[str, NFT]
 
     class Config:
         alias_generator = to_camel
