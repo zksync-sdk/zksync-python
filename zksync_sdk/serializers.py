@@ -1,4 +1,5 @@
 from typing import List
+from fractions import Fraction
 
 AMOUNT_EXPONENT_BIT_WIDTH = 5
 AMOUNT_MANTISSA_BIT_WIDTH = 35
@@ -210,8 +211,11 @@ def serialize_address(address: str) -> bytes:
         raise WrongValueError
     return address_bytes
 
-
 def serialize_content_hash(content_hash: str) -> bytes:
     if content_hash.startswith('0x'):
         content_hash = content_hash[2:]
     return bytes.fromhex(content_hash)
+
+def serialize_ratio_part(part: int) -> bytes:
+    # turn the number into bytes and 0-pad to length 15
+    return bytes.fromhex(hex(part)[2:].zfill(15*2))

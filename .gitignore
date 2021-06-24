@@ -29,3 +29,4 @@ venv/
 .coverage
 .tox/
 .idea/
+tags

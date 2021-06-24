@@ -6,6 +6,8 @@ PRIVATE_KEY_LEN = 32
 PUBLIC_KEY_LEN = 32
 PUBKEY_HASH_LEN = 20
 PACKED_SIGNATURE_LEN = 64
+ORDER_LEN = 89
+ORDERS_HASH_LEN = 31
 
 
 class ZksPrivateKey(Structure):
@@ -29,6 +31,16 @@ class ZksPubkeyHash(Structure):
 class ZksSignature(Structure):
     _fields_ = [
         ("data", c_ubyte * PACKED_SIGNATURE_LEN),
+    ]
+
+class ZksOrdersHash(Structure):
+    _fields_ = [
+        ("data", c_ubyte * ORDERS_HASH_LEN),
+    ]
+
+class ZksOrders(Structure):
+    _fields_ = [
+        ("data", c_ubyte * ORDER_LEN * 2),
     ]
 
 
@@ -66,3 +78,12 @@ class ZkSyncLibrary:
             ZksPrivateKey(data=(c_ubyte * PRIVATE_KEY_LEN)(*private_key)))
         self.lib.zks_crypto_sign_musig(private_key, message, len(message), signature)
         return bytes(signature.contents.data)
+
+    def hash_orders(self, orders: bytes):
+        assert len(orders) == ORDER_LEN * 2
+        orders_hash = ctypes.pointer(ZksOrdersHash())
+        orders_bytes = ctypes.pointer(
+            ZksOrders(data=(c_ubyte * (ORDER_LEN * 2))(*orders)))
+        self.lib.zks_crypto_rescue_hash_orders(orders_bytes, len(orders), orders_hash)
+        return bytes(orders_hash.contents.data)
+

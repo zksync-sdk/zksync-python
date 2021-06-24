@@ -15,9 +15,13 @@ __all__ = ['ZkSyncProviderV01']
 
 
 class ZkSyncProviderV01(ZkSyncProviderInterface):
-    async def submit_tx(self, tx: EncodedTx, signature: Optional[TxEthSignature],
+    async def submit_tx(self, tx: EncodedTx, signature: Union[Optional[TxEthSignature], List[Optional[TxEthSignature]]],
                         fast_processing: bool = False) -> str:
-        signature = signature.dict() if signature is not None else None
+        if isinstance(signature, List):
+            signature = [s.dict() if s is not None else None for s in signature]
+        else:
+            signature = signature.dict() if signature is not None else None
+
         return await self.provider.request("tx_submit",
                                            [tx.dict(), signature, fast_processing])
 

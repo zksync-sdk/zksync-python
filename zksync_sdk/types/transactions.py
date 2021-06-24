@@ -1,16 +1,14 @@
 import abc
 from dataclasses import dataclass
 from decimal import Decimal
+from fractions import Fraction
 from enum import Enum
-from typing import List, Optional, Union
+from typing import List, Optional, Union, Tuple
 
 from pydantic import BaseModel
 
-from zksync_sdk.serializers import (int_to_bytes, packed_amount_checked, packed_fee_checked,
-                                    serialize_account_id,
-                                    serialize_address, serialize_content_hash,
-                                    serialize_nonce, serialize_timestamp,
-                                    serialize_token_id, )
+from zksync_sdk.lib import ZkSyncLibrary
+from zksync_sdk.serializers import *
 from zksync_sdk.types.signatures import TxEthSignature, TxSignature
 
 DEFAULT_TOKEN_ADDRESS = "0x0000000000000000000000000000000000000000"
@@ -24,6 +22,11 @@ class ChangePubKeyTypes(Enum):
     onchain = "Onchain"
     ecdsa = "ECDSA"
     create2 = "CREATE2"
+
+
+class RatioType(Enum):
+    wei = 'Wei',
+    token = 'Token'
 
 
 @dataclass
@@ -366,6 +369,118 @@ class ForcedExit(EncodedTx):
             "validUntil":         self.valid_until,
         }
 
+@dataclass
+class Order:
+    account_id: int
+    recipient: str
+    nonce: int
+    token_sell: Token
+    token_buy: Token
+    amount: int
+    ratio: Fraction
+    valid_from: int
+    valid_until: int
+    signature: TxSignature = None
+    ethSignature: TxEthSignature = None
+
+    def msg_type(self) -> int:
+        return b'o'[0]
+
+    def encoded_message(self) -> bytes:
+        return b"".join([
+            int_to_bytes(self.msg_type(), 1),
+            int_to_bytes(TRANSACTION_VERSION, 1),
+            serialize_account_id(self.account_id),
+            serialize_address(self.recipient),
+            serialize_nonce(self.nonce),
+            serialize_token_id(self.token_sell.id),
+            serialize_token_id(self.token_buy.id),
+            serialize_ratio_part(self.ratio.numerator),
+            serialize_ratio_part(self.ratio.denominator),
+            packed_amount_checked(self.amount),
+            serialize_timestamp(self.valid_from),
+            serialize_timestamp(self.valid_until)
+        ])
+
+    def human_readable_message(self) -> str:
+        if self.amount == 0:
+            header = f'Limit order for {self.token_sell.symbol} -> {self.token_buy.symbol}'
+        else:
+            amount = self.token_sell.decimal_str_amount(self.amount)
+            header = f'Order for {amount} {self.token_sell.symbol} -> {self.token_buy.symbol}'
+
+        message = '\n'.join([
+            header,
+            f'Ratio: {self.ratio.numerator}:{self.ratio.denominator}',
+            f'Address: {self.recipient.lower()}',
+            f'Nonce: {self.nonce}'
+        ])
+        return message
+
+    def dict(self):
+        return {
+            "accountId":        self.account_id,
+            "recipient":        self.recipient,
+            "nonce":            self.nonce,
+            "token_sell":       self.token_sell.id,
+            "token_buy":        self.token_buy.id,
+            "amount":           self.amount,
+            "ratio":            (self.ratio.numerator, self.ratio.denominator),
+            "validFrom":        self.valid_from,
+            "validUntil":       self.valid_until,
+            "signature":        self.signature.dict() if self.signature else None,
+            "ethSignature":     self.ethSignature.dict() if self.ethSignature else None,
+        }
+
+@dataclass
+class Swap(EncodedTx):
+    submitter_id: int
+    submitter_address: str
+    amounts: Tuple[int, int]
+    orders: Tuple[Order, Order]
+    fee_token: Token
+    fee: int
+    nonce: int
+    signature: TxSignature = None
+
+    def tx_type(self) -> int:
+        return 11
+
+    def human_readable_message(self) -> str:
+        if self.fee != 0:
+            return f'Swap fee: {self.fee_token.decimal_str_amount(self.fee)} {self.fee_token.symbol}'
+        return ''
+
+    def encoded_message(self) -> bytes:
+        order_bytes = b''.join([
+            self.orders[0].encoded_message(),
+            self.orders[1].encoded_message(),
+        ])
+        return b"".join([
+            int_to_bytes(0xff - self.tx_type(), 1),
+            int_to_bytes(TRANSACTION_VERSION, 1),
+            serialize_account_id(self.submitter_id),
+            serialize_address(self.submitter_address),
+            serialize_nonce(self.nonce),
+            ZkSyncLibrary().hash_orders(order_bytes),
+            serialize_token_id(self.fee_token.id),
+            packed_fee_checked(self.fee),
+            packed_amount_checked(self.amounts[0]),
+            packed_amount_checked(self.amounts[1]),
+        ])
+
+    def dict(self):
+        return {
+            "type":             "Swap",
+            "submitterId":      self.submitter_id,
+            "submitterAddress": self.submitter_address,
+            "feeToken":         self.fee_token.id,
+            "fee":              self.fee,
+            "nonce":            self.nonce,
+            "signature":        self.signature.dict() if signature else None,
+            "amounts":          self.amounts,
+            "orders":           (self.orders[0].dict(), self.orders[1].dict())
+        }
 
 @dataclass
 class MintNFT(EncodedTx):
