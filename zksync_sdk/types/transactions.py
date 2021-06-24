@@ -450,14 +450,14 @@ class WithdrawNFT(EncodedTx):
         return {
             "type":                 "WithdrawNFT",
             "accountId":            self.account_id,
-            "fromAddress":          self.from_address,
-            "toAddress":            self.to_address,
-            "feeToken":             self.fee_token,
+            "from":                 self.from_address,
+            "to":                   self.to_address,
+            "feeToken":             self.fee_token.id,
             "fee":                  self.fee,
             "nonce":                self.nonce,
             "validFrom":            self.valid_from,
             "validUntil":           self.valid_until,
-            "tokenId":              self.token_id,
+            "token":                self.token_id,
             "signature":            self.signature.dict(),
         }
 

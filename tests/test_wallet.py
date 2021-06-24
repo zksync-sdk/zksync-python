@@ -82,6 +82,19 @@ class TestWallet(IsolatedAsyncioTestCase):
 
         assert tr
 
+    async def test_withdraw_nft(self):
+        await self.wallet.mint_nft("0x0000000000000000000000000000000000000000000000000000000000000123",
+                                   "0x21dDF51966f2A66D03998B0956fe59da1b3a179F", "USDC")
+        account_state = await self.wallet.get_account_state()
+        minted_nfts = account_state.committed.minted_nfts.values()
+        minted_nfts_iterator = iter(minted_nfts)
+        first_value = next(minted_nfts_iterator)
+
+        tr = await self.wallet.withdraw_nft("0x21dDF51966f2A66D03998B0956fe59da1b3a179F",
+                                            first_value, "USDC")
+
+        assert tr
+
     async def test_withdraw(self):
         tr = await self.wallet.withdraw("0x21dDF51966f2A66D03998B0956fe59da1b3a179F",
                                         Decimal("0.000001"), "USDT")
