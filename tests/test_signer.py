@@ -64,7 +64,7 @@ class ZkSyncSignerTest(TestCase):
         swap = Swap(orders=(order1, order2), nonce=1, amounts=(1000000, 2500000),
                     submitter_id=5, submitter_address="0xedE35562d3555e61120a151B3c8e8e91d83a378a",
                     fee_token=token3, fee=123)
-        res = "0xf40100000005ede35562d3555e61120a151b3c8e8e91d83a378a000000017b1e76f6f124bae1917435a02cfbf5571d79ddb8380bc4bf4858c9e9969487000000030f600001e848000004c4b400"
+        res = "f40100000005ede35562d3555e61120a151b3c8e8e91d83a378a000000017b1e76f6f124bae1917435a02cfbf5571d79ddb8380bc4bf4858c9e9969487000000030f600001e848000004c4b400"
         assert swap.encoded_message().hex() == res
 
     def test_forced_exit_bytes(self):

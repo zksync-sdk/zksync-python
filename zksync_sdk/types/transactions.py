@@ -422,8 +422,8 @@ class Order:
             "accountId":        self.account_id,
             "recipient":        self.recipient,
             "nonce":            self.nonce,
-            "token_sell":       self.token_sell.id,
-            "token_buy":        self.token_buy.id,
+            "tokenSell":        self.token_sell.id,
+            "tokenBuy":         self.token_buy.id,
             "amount":           self.amount,
             "ratio":            (self.ratio.numerator, self.ratio.denominator),
             "validFrom":        self.valid_from,
@@ -477,7 +477,7 @@ class Swap(EncodedTx):
             "feeToken":         self.fee_token.id,
             "fee":              self.fee,
             "nonce":            self.nonce,
-            "signature":        self.signature.dict() if signature else None,
+            "signature":        self.signature.dict() if self.signature else None,
             "amounts":          self.amounts,
             "orders":           (self.orders[0].dict(), self.orders[1].dict())
         }
