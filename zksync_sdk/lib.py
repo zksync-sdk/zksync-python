@@ -84,6 +84,6 @@ class ZkSyncLibrary:
         orders_hash = ctypes.pointer(ZksOrdersHash())
         orders_bytes = ctypes.pointer(
             ZksOrders(data=(c_ubyte * (ORDER_LEN * 2))(*orders)))
-        self.lib.zks_crypto_rescue_hash_orders(orders_bytes, len(orders), orders_hash)
+        self.lib.rescue_hash_orders(orders_bytes, len(orders), orders_hash)
         return bytes(orders_hash.contents.data)
 
