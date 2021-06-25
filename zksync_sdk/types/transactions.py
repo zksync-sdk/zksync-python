@@ -448,8 +448,11 @@ class Swap(EncodedTx):
 
     def human_readable_message(self) -> str:
         if self.fee != 0:
-            return f'Swap fee: {self.fee_token.decimal_str_amount(self.fee)} {self.fee_token.symbol}'
-        return ''
+            message =  f'Swap fee: {self.fee_token.decimal_str_amount(self.fee)} {self.fee_token.symbol}\n'
+        else:
+            message = ''
+        message += f'Nonce: {self.nonce}'
+        return message
 
     def encoded_message(self) -> bytes:
         order_bytes = b''.join([

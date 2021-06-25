@@ -21,7 +21,6 @@ class ZkSyncProviderV01(ZkSyncProviderInterface):
             signature = [s.dict() if s is not None else None for s in signature]
         else:
             signature = signature.dict() if signature is not None else None
-
         return await self.provider.request("tx_submit",
                                            [tx.dict(), signature, fast_processing])
 
