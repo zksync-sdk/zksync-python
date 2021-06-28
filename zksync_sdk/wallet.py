@@ -206,7 +206,7 @@ class Wallet:
             fee = await self.zk_provider.get_transaction_fee(FeeTxType.withdraw_nft, to_address, fee_token.id)
             fee = fee.total_fee
         else:
-            fee = nft_token.from_decimal(fee)
+            fee = fee_token.from_decimal(fee)
         withdraw_nft = WithdrawNFT(
             account_id=account_id,
             from_address=self.address(),

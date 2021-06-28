@@ -29,7 +29,9 @@ class ChangePubKeyTypes(Enum):
 
 
 class RatioType(Enum):
+    # This means the ratio represents lowest denominations of tokens (wei for ETH, satoshi for BTC etc.)
     wei = 'Wei',
+    # This means the ratio represents tokens themselves
     token = 'Token'
 
 
