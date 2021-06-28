@@ -8,7 +8,11 @@ from typing import List, Optional, Union, Tuple
 from pydantic import BaseModel
 
 from zksync_sdk.lib import ZkSyncLibrary
-from zksync_sdk.serializers import *
+from zksync_sdk.serializers import (int_to_bytes, packed_amount_checked, packed_fee_checked,
+                                    serialize_account_id,
+                                    serialize_address, serialize_content_hash,
+                                    serialize_nonce, serialize_timestamp,
+                                    serialize_token_id, serialize_ratio_part)
 from zksync_sdk.types.signatures import TxEthSignature, TxSignature
 
 DEFAULT_TOKEN_ADDRESS = "0x0000000000000000000000000000000000000000"

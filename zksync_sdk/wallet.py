@@ -4,7 +4,10 @@ from typing import List, Optional, Tuple, Union
 
 from zksync_sdk.ethereum_provider import EthereumProvider
 from zksync_sdk.ethereum_signer import EthereumSignerInterface
-from zksync_sdk.types import *
+from zksync_sdk.types import (ChangePubKey, ChangePubKeyCREATE2, ChangePubKeyEcdsa,
+                              ChangePubKeyTypes, EncodedTx, ForcedExit, Token, TokenLike,
+                              Tokens, TransactionWithSignature, Transfer, TxEthSignature,
+                              Withdraw, MintNFT, WithdrawNFT, NFT, Order, Swap, RatioType)
 from zksync_sdk.zksync_provider import FeeTxType, ZkSyncProviderInterface
 from zksync_sdk.zksync_signer import ZkSyncSigner
 
