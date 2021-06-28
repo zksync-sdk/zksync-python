@@ -6,6 +6,7 @@ __all__ = ['FeeTxType']
 class FeeTxType(Enum):
     withdraw = "Withdraw"
     transfer = "Transfer"
+    swap = "Swap"
     fast_withdraw = "FastWithdraw"
     change_pub_key_onchain = {"ChangePubKey": "Onchain"}
     change_pub_key_ecdsa = {"ChangePubKey": "ECDSA"}

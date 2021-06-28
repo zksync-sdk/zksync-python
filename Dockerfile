@@ -8,8 +8,8 @@ RUN wget https://github.com/sgerrand/alpine-pkg-glibc/releases/download/2.28-r0/
 RUN apk add glibc-2.28-r0.apk
 RUN mkdir -p /src/zksync_sdk
 WORKDIR /src
-RUN wget -O /lib/zks-crypto-linux-x64.so  https://github.com/zksync-sdk/zksync-crypto-c/releases/download/v0.1.0/zks-crypto-linux-x64.so
-RUN wget -O /lib/zks-crypto-linux-x64.a  https://github.com/zksync-sdk/zksync-crypto-c/releases/download/v0.1.0/zks-crypto-linux-x64.a
+RUN wget -O /lib/zks-crypto-linux-x64.so  https://github.com/zksync-sdk/zksync-crypto-c/releases/download/v0.1.1/zks-crypto-linux-x64.so
+RUN wget -O /lib/zks-crypto-linux-x64.a  https://github.com/zksync-sdk/zksync-crypto-c/releases/download/v0.1.1/zks-crypto-linux-x64.a
 
 COPY setup.cfg /src
 COPY setup.py /src

@@ -18,7 +18,7 @@ class ZkSyncProviderInterface(ABC):
         self.provider = provider
 
     @abstractmethod
-    async def submit_tx(self, tx: EncodedTx, signature: Optional[TxEthSignature],
+    async def submit_tx(self, tx: EncodedTx, signature: Union[Optional[TxEthSignature], List[Optional[TxEthSignature]]],
                         fast_processing: bool = False) -> str:
         raise NotImplementedError
 

@@ -1,4 +1,5 @@
 from decimal import Decimal
+from fractions import Fraction
 from unittest import IsolatedAsyncioTestCase
 
 from web3 import Account, HTTPProvider, Web3
@@ -6,43 +7,50 @@ from web3 import Account, HTTPProvider, Web3
 from zksync_sdk import (EthereumProvider, EthereumSignerWeb3, HttpJsonRPCTransport, Wallet, ZkSync,
                         ZkSyncLibrary, ZkSyncProviderV01, ZkSyncSigner, )
 from zksync_sdk.network import rinkeby
-from zksync_sdk.types import ChangePubKeyEcdsa, Token, TransactionWithSignature
+from zksync_sdk.types import ChangePubKeyEcdsa, Token, TransactionWithSignature, RatioType
 
 
 class TestWallet(IsolatedAsyncioTestCase):
+    # 0x995a8b7f96cb837533b79775b6209696d51f435c
     private_key = "0xa045b52470d306ff78e91b0d2d92f90f7504189125a46b69423dc673fd6b4f3e"
+    private_keys = [
+        # 0x800455ca06265d0cf742086663a527d7c08049fc
+        "0x601b47729b2820e94bc10125edc8d534858827428b449175a275069dc00c303f",
+        # 0x3aa03b5bcba43eebcb98432507474ffb3423ac94
+        "0xa7adf8459b4c9a62f09e0e5390983c0145fa20e88c9e5bf837d8bf3dcd05bd9c",
+    ]
 
-    async def asyncSetUp(self) -> None:
-        self.account = Account.from_key(self.private_key)
-        ethereum_signer = EthereumSignerWeb3(account=self.account)
-        self.library = ZkSyncLibrary()
+    async def get_wallet(self, private_key: str) -> Wallet:
+        account = Account.from_key(private_key)
+        ethereum_signer = EthereumSignerWeb3(account=account)
 
-        w3 = Web3(
-            HTTPProvider(
-                endpoint_uri="https://rinkeby.infura.io/v3/bcf42e619a704151a1b0d95a35cb2e62"
-            )
-        )
+        w3 = Web3(HTTPProvider(
+                endpoint_uri="https://rinkeby.infura.io/v3/bcf42e619a704151a1b0d95a35cb2e62"))
         provider = ZkSyncProviderV01(provider=HttpJsonRPCTransport(network=rinkeby))
         address = await provider.get_contract_address()
-        self.zksync = ZkSync(account=self.account, web3=w3,
-                             zksync_contract_address=address.main_contract)
+        zksync = ZkSync(account=account, web3=w3, zksync_contract_address=address.main_contract)
+        ethereum_provider = EthereumProvider(w3, zksync)
+        signer = ZkSyncSigner.from_account(account, self.library, rinkeby.chain_id)
 
-        ethereum_provider = EthereumProvider(w3, self.zksync)
-        signer = ZkSyncSigner.from_account(self.account, self.library, rinkeby.chain_id)
+        return Wallet(ethereum_provider=ethereum_provider, zk_signer=signer,
+                      eth_signer=ethereum_signer, provider=provider)
 
-        self.wallet = Wallet(ethereum_provider=ethereum_provider, zk_signer=signer,
-                             eth_signer=ethereum_signer, provider=provider)
+
+    async def asyncSetUp(self):
+        self.library = ZkSyncLibrary()
+        self.wallet = await self.get_wallet(self.private_key)
+        self.wallets = [await self.get_wallet(key) for key in self.private_keys]
 
     async def test_get_account_state(self):
-        data = await self.wallet.zk_provider.get_state(self.account.address)
-        assert data.address.lower() == self.account.address.lower()
+        data = await self.wallet.zk_provider.get_state(self.wallet.address())
+        assert data.address.lower() == self.wallet.address().lower()
 
     async def test_deposit(self):
         token = await self.wallet.resolve_token("USDT")
         await self.wallet.ethereum_provider.approve_deposit(token, Decimal(1))
 
         res = await self.wallet.ethereum_provider.deposit(token, Decimal(1),
-                                                          self.account.address)
+                                                          self.wallet.address())
         assert res
 
     async def test_change_pubkey(self):
@@ -51,13 +59,19 @@ class TestWallet(IsolatedAsyncioTestCase):
 
     async def test_is_public_key_onset(self):
         pubkey_hash = self.wallet.zk_signer.pubkey_hash()
-        account, nonce = await self.wallet.zk_provider.get_account_nonce(self.account.address)
+        account, nonce = await self.wallet.zk_provider.get_account_nonce(self.wallet.address())
         await self.wallet.ethereum_provider.set_auth_pubkey_hash(pubkey_hash, nonce)
         assert await self.wallet.ethereum_provider.is_onchain_auth_pubkey_hash_set(nonce)
 
     async def test_transfer(self):
         tr = await self.wallet.transfer("0x21dDF51966f2A66D03998B0956fe59da1b3a179F",
                                         amount=Decimal("0.01"), token="USDC")
+        assert tr
+
+    async def test_swap(self):
+        order1 = await self.wallets[0].get_order('USDT', 'ETH', Fraction(1500, 1), RatioType.token, Decimal('10.0'))
+        order2 = await self.wallets[1].get_order('ETH', 'USDT', Fraction(1, 1200), RatioType.token, Decimal('0.007'))
+        tr = await self.wallet.swap((order1, order2), 'ETH')
         assert tr
 
     async def test_batch(self):
@@ -101,7 +115,7 @@ class TestWallet(IsolatedAsyncioTestCase):
 
         assert tr
 
-    async def test_get_tokes(self):
+    async def test_get_tokens(self):
         tokens = await self.wallet.zk_provider.get_tokens()
         assert tokens.find_by_symbol("ETH")
 

@@ -1,13 +1,13 @@
 from decimal import Decimal
+from fractions import Fraction
 from typing import List, Optional, Tuple, Union
 
 from zksync_sdk.ethereum_provider import EthereumProvider
 from zksync_sdk.ethereum_signer import EthereumSignerInterface
 from zksync_sdk.types import (ChangePubKey, ChangePubKeyCREATE2, ChangePubKeyEcdsa,
-                              ChangePubKeyTypes, EncodedTx,
-                              ForcedExit, Token,
-                              TokenLike, Tokens, TransactionWithSignature, Transfer,
-                              TxEthSignature, Withdraw, MintNFT, WithdrawNFT, NFT, )
+                              ChangePubKeyTypes, EncodedTx, ForcedExit, Token, TokenLike,
+                              Tokens, TransactionWithSignature, Transfer, TxEthSignature,
+                              Withdraw, MintNFT, WithdrawNFT, NFT, Order, Swap, RatioType)
 from zksync_sdk.zksync_provider import FeeTxType, ZkSyncProviderInterface
 from zksync_sdk.zksync_signer import ZkSyncSigner
 
@@ -23,6 +23,9 @@ class TokenNotFoundError(WalletError):
     pass
 
 
+class AmountsMissing(WalletError):
+    pass
+
 class Wallet:
     def __init__(self, ethereum_provider: EthereumProvider, zk_signer: ZkSyncSigner,
                  eth_signer: EthereumSignerInterface, provider: ZkSyncProviderInterface):
@@ -32,7 +35,7 @@ class Wallet:
         self.zk_provider = provider
         self.tokens = Tokens(tokens=[])
 
-    async def send_signed_transaction(self, tx: EncodedTx, eth_signature: TxEthSignature,
+    async def send_signed_transaction(self, tx: EncodedTx, eth_signature: Union[Optional[TxEthSignature], List[Optional[TxEthSignature]]],
                                       fast_processing: bool = False) -> str:
         return await self.zk_provider.submit_tx(tx, eth_signature, fast_processing)
 
@@ -203,7 +206,7 @@ class Wallet:
             fee = await self.zk_provider.get_transaction_fee(FeeTxType.withdraw_nft, to_address, fee_token.id)
             fee = fee.total_fee
         else:
-            fee = nft_token.from_decimal(fee)
+            fee = fee_token.from_decimal(fee)
         withdraw_nft = WithdrawNFT(
             account_id=account_id,
             from_address=self.address(),
@@ -254,6 +257,68 @@ class Wallet:
                                                             valid_from, valid_until)
 
         return await self.send_signed_transaction(transfer, eth_signature)
+
+    async def get_order(self, token_sell: TokenLike, token_buy: TokenLike,
+                        ratio: Fraction, ratio_type: RatioType, amount: Decimal,
+                        recipient: str = None,
+                        valid_from=DEFAULT_VALID_FROM,
+                        valid_until=DEFAULT_VALID_UNTIL) -> Order:
+        account_id, nonce = await self.zk_provider.get_account_nonce(self.address())
+        token_sell = await self.resolve_token(token_sell)
+        token_buy = await self.resolve_token(token_buy)
+        recipient = recipient or self.address()
+
+        if ratio_type == RatioType.token:
+            num = token_sell.from_decimal(Decimal(ratio.numerator))
+            den = token_buy.from_decimal(Decimal(ratio.denominator))
+            ratio = Fraction(num, den)
+
+        order = Order(account_id=account_id, recipient=recipient,
+                      token_sell=token_sell,
+                      token_buy=token_buy,
+                      ratio=ratio,
+                      amount=token_sell.from_decimal(amount),
+                      nonce=nonce,
+                      valid_from=valid_from,
+                      valid_until=valid_until)
+
+        order.eth_signature = self.eth_signer.sign_tx(order)
+        order.signature = self.zk_signer.sign_tx(order)
+        return order
+
+    async def get_limit_order(self, token_sell: TokenLike, token_buy: TokenLike,
+                              ratio: Fraction, ratio_type: RatioType,
+                              recipient: str = None,
+                              valid_from=DEFAULT_VALID_FROM,
+                              valid_until=DEFAULT_VALID_UNTIL):
+        return await self.get_order(token_sell, token_buy, ratio, ratio_type, Decimal(0), recipient, valid_from, valid_until)
+
+    async def build_swap(self, orders: Tuple[Order, Order], fee_token: TokenLike,
+                         amounts: Tuple[Decimal, Decimal] = None, fee: Decimal = None):
+        account_id, nonce = await self.zk_provider.get_account_nonce(self.address())
+        fee_token = await self.resolve_token(fee_token)
+        if fee is None:
+            fee = await self.zk_provider.get_transaction_fee(FeeTxType.swap, self.address(), fee_token.id)
+            fee = fee.total_fee
+        else:
+            fee = token.from_decimal(fee)
+        if amounts is None:
+            amounts = (orders[0].amount, orders[1].amount)
+            if amounts[0] == 0 or amounts[1] == 0:
+                raise AmountsMissing("in this case you must specify amounts explicitly")
+        swap = Swap(
+            orders=orders, fee_token=fee_token, amounts=amounts, fee=fee, nonce=nonce,
+            submitter_id=account_id, submitter_address=self.address()
+        )
+        eth_signature = self.eth_signer.sign_tx(swap)
+        swap.signature = self.zk_signer.sign_tx(swap)
+        return swap, eth_signature
+
+    async def swap(self, orders: Tuple[Order, Order], fee_token: TokenLike,
+                         amounts: Tuple[Decimal, Decimal] = None, fee: Decimal = None):
+        swap, eth_signature = await self.build_swap(orders, fee_token, amounts, fee)
+        eth_signatures = [eth_signature, swap.orders[0].eth_signature, swap.orders[1].eth_signature]
+        return await self.send_signed_transaction(swap, eth_signatures)
 
     async def build_withdraw(self, eth_address: str, amount: Decimal, token: TokenLike,
                              fee: Decimal = None, fast: bool = False,
