@@ -166,9 +166,7 @@ class Wallet:
         else:
             fee = token.from_decimal(fee)
 
-
         mint_nft, eth_signature = self.build_mint_nft(content_hash, recipient, token, fee, nonce, account_id)
-
         return await self.send_signed_transaction(mint_nft, eth_signature)
 
     def build_mint_nft(
@@ -193,13 +191,15 @@ class Wallet:
 
         return mint_nft, eth_signature
 
-    async def withdraw_nft(self,
-                           to_address: str,
-                           nft_token: NFT,
-                           fee_token: TokenLike,
-                           fee: Decimal = None,
-                           valid_from=DEFAULT_VALID_FROM,
-                           valid_until=DEFAULT_VALID_UNTIL) -> str:
+    async def withdraw_nft(
+        self,
+        to_address: str,
+        nft_token: NFT,
+        fee_token: TokenLike,
+        fee: Decimal = None,
+        valid_from=DEFAULT_VALID_FROM,
+        valid_until=DEFAULT_VALID_UNTIL
+    ) -> str:
         account_id, nonce = await self.zk_provider.get_account_nonce(self.address())
         fee_token = await self.resolve_token(fee_token)
 
@@ -214,17 +214,17 @@ class Wallet:
 
         return await self.send_signed_transaction(withdraw_nft, eth_signature)
 
-    def build_withdraw_nft(self,
-                                 to_address: str,
-                                 nft_token: NFT,
-                                 fee_token: Token,
-                                 fee: int,
-                                 nonce: int,
-                                 account_id: int,
-                                 valid_from=DEFAULT_VALID_FROM,
-                                 valid_until=DEFAULT_VALID_UNTIL) -> Tuple[WithdrawNFT, TxEthSignature]:
-        
-        
+    def build_withdraw_nft(
+        self,
+        to_address: str,
+        nft_token: NFT,
+        fee_token: Token,
+        fee: int,
+        nonce: int,
+        account_id: int,
+        valid_from=DEFAULT_VALID_FROM,
+        valid_until=DEFAULT_VALID_UNTIL
+    ) -> Tuple[WithdrawNFT, TxEthSignature]:    
         withdraw_nft = WithdrawNFT(
             account_id=account_id,
             from_address=self.address(),
@@ -245,16 +245,17 @@ class Wallet:
     def address(self):
         return self.eth_signer.address()
 
-    def build_transfer(self, 
-                             to: str, 
-                             amount: int, 
-                             token: Token,
-                             fee: int,
-                             nonce: int,
-                             account_id: int,
-                             valid_from: int=DEFAULT_VALID_FROM,
-                             valid_until: int=DEFAULT_VALID_UNTIL, 
-                             ) -> Tuple[Transfer, TxEthSignature]:
+    def build_transfer(
+        self, 
+        to: str, 
+        amount: int, 
+        token: Token,
+        fee: int,
+        nonce: int,
+        account_id: int,
+        valid_from: int=DEFAULT_VALID_FROM,
+        valid_until: int=DEFAULT_VALID_UNTIL, 
+    ) -> Tuple[Transfer, TxEthSignature]:
         transfer = Transfer(account_id=account_id, from_address=self.address(),
                             to_address=to.lower(),
                             amount=amount, fee=fee,
@@ -281,8 +282,7 @@ class Wallet:
 
         amount = token.from_decimal(amount)
 
-        transfer, eth_signature = self.build_transfer(to, amount, token, fee, nonce, account_id,
-                                                            valid_from, valid_until)
+        transfer, eth_signature = self.build_transfer(to, amount, token, fee, nonce, account_id, valid_from, valid_until)
         return await self.send_signed_transaction(transfer, eth_signature)
 
     async def transfer_nft(self, to: str, nft: NFT, feeToken: TokenLike, 
@@ -304,12 +304,10 @@ class Wallet:
         
         nft_tx = self.build_transfer(to, 1, nft, 0, nonce, account_id, valid_from, valid_until)
         fee_tx = self.build_transfer(self.address(), 0, fee_token, fee, nonce+1, account_id, valid_from, valid_until)
-
         batch = [
             TransactionWithSignature(nft_tx[0], nft_tx[1]),
             TransactionWithSignature(fee_tx[0], fee_tx[1])
         ]
-
         return await self.send_txs_batch(batch)
 
     def build_order(self, token_sell: Token, token_buy: Token,
@@ -458,7 +456,6 @@ class Wallet:
             return resolved_token
         self.tokens = await self.zk_provider.get_tokens()
         resolved_token = self.tokens.find(token)
-
         if resolved_token is None:
             raise TokenNotFoundError
         return resolved_token

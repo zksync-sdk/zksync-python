@@ -66,8 +66,8 @@ class TestWallet(IsolatedAsyncioTestCase):
         assert await self.wallet.ethereum_provider.is_onchain_auth_pubkey_hash_set(nonce)
 
     async def test_transfer(self):
-        tr = await self.wallet.transfer("0x995a8b7f96cb837533b79775b6209696d51f435c",
-                                        amount=Decimal("0"), token="USDC")
+        tr = await self.wallet.transfer("0x21dDF51966f2A66D03998B0956fe59da1b3a179F",
+                                amount=Decimal("0.01"), token="USDC")
         assert tr
 
     async def test_swap(self):

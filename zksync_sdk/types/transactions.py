@@ -6,7 +6,6 @@ from enum import Enum
 from typing import List, Optional, Union, Tuple
 
 from pydantic import BaseModel
-from pydantic.generics import GenericModel
 
 from zksync_sdk.lib import ZkSyncLibrary
 from zksync_sdk.serializers import (int_to_bytes, packed_amount_checked, packed_fee_checked,
@@ -255,7 +254,6 @@ class Transfer(EncodedTx):
 
         if self.amount != 0:
             msg += f"Transfer {self.token.decimal_str_amount(self.amount)} {self.token.symbol} to: {self.to_address.lower()}\n"
-        
         if self.fee != 0:
             msg += f"Fee: {self.token.decimal_str_amount(self.fee)} {self.token.symbol}\n"
         
@@ -313,10 +311,8 @@ class Withdraw(EncodedTx):
 
         if self.amount != 0:
             msg += f"Withdraw {self.token.decimal_str_amount(self.amount)} {self.token.symbol} to: {self.to_address.lower()}\n"
-        
         if self.fee != 0:
             msg += f"Fee: {self.token.decimal_str_amount(self.fee)} {self.token.symbol}\n"
-        
         return msg + f"Nonce: {self.nonce}"
 
     def encoded_message(self) -> bytes:

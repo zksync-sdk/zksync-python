@@ -3,7 +3,6 @@ from decimal import Decimal
 from zksync_sdk.types.transactions import Token
 
 from pydantic import BaseModel
-from pydantic.generics import GenericModel
 
 
 def to_camel(string: str) -> str:
