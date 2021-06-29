@@ -6,6 +6,7 @@ from enum import Enum
 from typing import List, Optional, Union, Tuple
 
 from pydantic import BaseModel
+from pydantic.generics import GenericModel
 
 from zksync_sdk.lib import ZkSyncLibrary
 from zksync_sdk.serializers import (int_to_bytes, packed_amount_checked, packed_fee_checked,
@@ -90,7 +91,7 @@ class Token(BaseModel):
 
         # zero is the only exception where we don't add a decimal point
         if d == 0:
-            return "0"
+            return "0.0"
 
         # Creates a string with `self.decimals` numbers after decimal point.
         # Prevents scientific notation (string values like '1E-8').
@@ -100,6 +101,10 @@ class Token(BaseModel):
         d_str = d_str.rstrip("0")
         if d_str[-1] == ".":
             return d_str + "0"
+
+        if d_str.find('.') == -1:
+            return d_str + '.0'
+
         return d_str
 
 
@@ -246,8 +251,15 @@ class Transfer(EncodedTx):
         return 5
 
     def human_readable_message(self) -> str:
-        message = f"Transfer {self.token.decimal_str_amount(self.amount)} {self.token.symbol} to: {self.to_address.lower()}\nFee: {self.token.decimal_str_amount(self.fee)} {self.token.symbol}\nNonce: {self.nonce}"
-        return message
+        msg = ""
+
+        if self.amount != 0:
+            msg += f"Transfer {self.token.decimal_str_amount(self.amount)} {self.token.symbol} to: {self.to_address.lower()}\n"
+        
+        if self.fee != 0:
+            msg += f"Fee: {self.token.decimal_str_amount(self.fee)} {self.token.symbol}\n"
+        
+        return msg + f"Nonce: {self.nonce}"
 
     def encoded_message(self) -> bytes:
         return b"".join([
@@ -297,8 +309,15 @@ class Withdraw(EncodedTx):
         return 3
 
     def human_readable_message(self) -> str:
-        message = f"Withdraw {self.token.decimal_str_amount(self.amount)} {self.token.symbol} to: {self.to_address.lower()}\nFee: {self.token.decimal_str_amount(self.fee)} {self.token.symbol}\nNonce: {self.nonce}"
-        return message
+        msg = ""
+
+        if self.amount != 0:
+            msg += f"Withdraw {self.token.decimal_str_amount(self.amount)} {self.token.symbol} to: {self.to_address.lower()}\n"
+        
+        if self.fee != 0:
+            msg += f"Fee: {self.token.decimal_str_amount(self.fee)} {self.token.symbol}\n"
+        
+        return msg + f"Nonce: {self.nonce}"
 
     def encoded_message(self) -> bytes:
         return b"".join([

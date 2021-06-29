@@ -1,7 +1,9 @@
 from typing import Any, Dict, Optional
 from decimal import Decimal
+from zksync_sdk.types.transactions import Token
 
 from pydantic import BaseModel
+from pydantic.generics import GenericModel
 
 
 def to_camel(string: str) -> str:
@@ -20,14 +22,12 @@ class Balance(BaseModel):
 class Depositing(BaseModel):
     balances: Dict[str, Balance]
 
-class NFT(BaseModel):
-    id: int
-    symbol: str
+class NFT(Token):
     creator_id: int
     content_hash: str
     creator_address: str
     serial_id: int
-    address: str
+    decimals = 0
 
     def decimal_amount(self, amount: int) -> Decimal:
         return Decimal(amount)
