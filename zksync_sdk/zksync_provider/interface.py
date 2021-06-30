@@ -46,7 +46,7 @@ class ZkSyncProviderInterface(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    async def get_account_nonce(self, address: str) -> Tuple[int, int]:
+    async def get_account_nonce(self, address: str) -> int:
         raise NotImplementedError
 
     @abstractmethod

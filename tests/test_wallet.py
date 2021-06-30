@@ -61,7 +61,7 @@ class TestWallet(IsolatedAsyncioTestCase):
 
     async def test_is_public_key_onset(self):
         pubkey_hash = self.wallet.zk_signer.pubkey_hash()
-        account, nonce = await self.wallet.zk_provider.get_account_nonce(self.wallet.address())
+        nonce = await self.wallet.zk_provider.get_account_nonce(self.wallet.address())
         await self.wallet.ethereum_provider.set_auth_pubkey_hash(pubkey_hash, nonce)
         assert await self.wallet.ethereum_provider.is_onchain_auth_pubkey_hash_set(nonce)
 
@@ -82,12 +82,12 @@ class TestWallet(IsolatedAsyncioTestCase):
         fee = (await self.wallet.zk_provider.get_transaction_fee(
             FeeTxType.transfer, "0x21dDF51966f2A66D03998B0956fe59da1b3a179F", "ETH"
         )).total_fee
-        account_id, nonce = await self.wallet.zk_provider.get_account_nonce(self.wallet.address())
+        nonce = await self.wallet.zk_provider.get_account_nonce(self.wallet.address())
 
         for i in range(3):
-            tr, sig = self.wallet.build_transfer(
+            tr, sig = await self.wallet.build_transfer(
                 "0x21dDF51966f2A66D03998B0956fe59da1b3a179F",
-                amount=1, token=eth_token, fee=fee, account_id=account_id, nonce=nonce+i)
+                amount_wei=1, token=eth_token, fee_wei=fee, nonce=nonce+i)
             trs.append(TransactionWithSignature(tr, sig))
         res = await self.wallet.send_txs_batch(trs)
         assert len(res) == 3

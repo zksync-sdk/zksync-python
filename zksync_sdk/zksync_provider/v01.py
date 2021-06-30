@@ -58,9 +58,9 @@ class ZkSyncProviderV01(ZkSyncProviderInterface):
     async def get_confirmations_for_eth_op_amount(self) -> int:
         return await self.provider.request("get_confirmations_for_eth_op_amount", None)
 
-    async def get_account_nonce(self, address: str) -> Tuple[int, int]:
+    async def get_account_nonce(self, address: str) -> int:
         state = await self.get_state(address)
-        return state.id, state.get_nonce()
+        return state.get_nonce()
 
     async def get_tx_receipt(self, address: str) -> TransactionDetails:
         return await self.provider.request("tx_info", [address])
