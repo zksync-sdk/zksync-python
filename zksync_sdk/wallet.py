@@ -135,6 +135,8 @@ class Wallet:
         if fee is None:
             fee = await self.zk_provider.get_transaction_fee(FeeTxType.withdraw, target, token.id)
             fee = fee.total_fee
+        else:
+            fee = token.from_decimal(fee)
         
         transfer, eth_signature = await self.build_forced_exit(target, token, fee, nonce,
                                                                valid_from, valid_until)
@@ -305,13 +307,13 @@ class Wallet:
         transfer, eth_signature = await self.build_transfer(to, amount, token, fee, nonce, valid_from, valid_until)
         return await self.send_signed_transaction(transfer, eth_signature)
 
-    async def transfer_nft(self, to: str, nft: NFT, feeToken: TokenLike, 
+    async def transfer_nft(self, to: str, nft: NFT, fee_token: TokenLike, 
                           fee: Decimal = None, 
                           valid_from=DEFAULT_VALID_FROM, 
                           valid_until=DEFAULT_VALID_UNTIL
                           ) -> List[TxEthSignature]:
         nonce = await self.zk_provider.get_account_nonce(self.address())
-        fee_token = await self.resolve_token(feeToken)
+        fee_token = await self.resolve_token(fee_token)
 
         if fee is None:
             fee = await self.zk_provider.get_transactions_batch_fee(

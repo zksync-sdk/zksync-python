@@ -87,10 +87,7 @@ class Token(BaseModel):
 
     def decimal_str_amount(self, amount: int) -> str:
         d = self.decimal_amount(amount)
-
-        if d == 0:
-            return "0.0"
-
+        
         # Creates a string with `self.decimals` numbers after decimal point.
         # Prevents scientific notation (string values like '1E-8').
         # Prevents integral numbers having no decimal point in the string representation.
