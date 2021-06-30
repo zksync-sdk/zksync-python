@@ -1,6 +1,8 @@
 from decimal import Decimal
 from fractions import Fraction
 from unittest import IsolatedAsyncioTestCase
+from zksync_sdk.zksync_provider.types import FeeTxType
+from zksync_sdk.types.responses import Fee
 
 from web3 import Account, HTTPProvider, Web3
 
@@ -59,13 +61,13 @@ class TestWallet(IsolatedAsyncioTestCase):
 
     async def test_is_public_key_onset(self):
         pubkey_hash = self.wallet.zk_signer.pubkey_hash()
-        account, nonce = await self.wallet.zk_provider.get_account_nonce(self.wallet.address())
+        nonce = await self.wallet.zk_provider.get_account_nonce(self.wallet.address())
         await self.wallet.ethereum_provider.set_auth_pubkey_hash(pubkey_hash, nonce)
         assert await self.wallet.ethereum_provider.is_onchain_auth_pubkey_hash_set(nonce)
 
     async def test_transfer(self):
         tr = await self.wallet.transfer("0x21dDF51966f2A66D03998B0956fe59da1b3a179F",
-                                        amount=Decimal("0.01"), token="USDC")
+                                amount=Decimal("0.01"), token="USDC")
         assert tr
 
     async def test_swap(self):
@@ -76,10 +78,16 @@ class TestWallet(IsolatedAsyncioTestCase):
 
     async def test_batch(self):
         trs = []
+        eth_token = await self.wallet.resolve_token("ETH")
+        fee = (await self.wallet.zk_provider.get_transaction_fee(
+            FeeTxType.transfer, "0x21dDF51966f2A66D03998B0956fe59da1b3a179F", "ETH"
+        )).total_fee
+        nonce = await self.wallet.zk_provider.get_account_nonce(self.wallet.address())
+
         for i in range(3):
             tr, sig = await self.wallet.build_transfer(
                 "0x21dDF51966f2A66D03998B0956fe59da1b3a179F",
-                amount=Decimal("0.000001"), token="ETH")
+                amount=1, token=eth_token, fee=fee, nonce=nonce+i)
             trs.append(TransactionWithSignature(tr, sig))
         res = await self.wallet.send_txs_batch(trs)
         assert len(res) == 3
@@ -95,6 +103,20 @@ class TestWallet(IsolatedAsyncioTestCase):
                                         "0x21dDF51966f2A66D03998B0956fe59da1b3a179F", "USDC")
 
         assert tr
+
+    async def test_transfer_nft(self):
+        account_state = await self.wallet.get_account_state()
+        nfts = account_state.committed.nfts.values()
+        nfts_iterator = iter(nfts)
+        first_value = next(nfts_iterator)
+
+        txs = await self.wallet.transfer_nft(
+            "0x995a8b7f96cb837533b79775b6209696d51f435c",
+            first_value,
+            "USDC"   
+        )
+
+        assert txs
 
     async def test_withdraw_nft(self):
         await self.wallet.mint_nft("0x0000000000000000000000000000000000000000000000000000000000000123",

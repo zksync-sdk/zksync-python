@@ -58,9 +58,9 @@ class ZkSyncProviderV01(ZkSyncProviderInterface):
     async def get_confirmations_for_eth_op_amount(self) -> int:
         return await self.provider.request("get_confirmations_for_eth_op_amount", None)
 
-    async def get_account_nonce(self, address: str) -> Tuple[int, int]:
+    async def get_account_nonce(self, address: str) -> int:
         state = await self.get_state(address)
-        return state.id, state.get_nonce()
+        return state.get_nonce()
 
     async def get_tx_receipt(self, address: str) -> TransactionDetails:
         return await self.provider.request("tx_info", [address])
@@ -72,12 +72,15 @@ class ZkSyncProviderV01(ZkSyncProviderInterface):
         data = await self.provider.request("ethop_info", [serial_id])
         return EthOpInfo(**data)
 
+    # Please note that the batch fee returns the fee of the transaction in int and not in Fee
+    # This is a server-side feature
     async def get_transactions_batch_fee(self, tx_types: List[FeeTxType], addresses: List[Address],
-                                         token_like) -> Fee:
+                                         token_like) -> int:
 
-        return await self.provider.request('get_txs_batch_fee_in_wei',
+        data = await self.provider.request('get_txs_batch_fee_in_wei',
                                            [[tx_type.value for tx_type in tx_types],
                                             addresses, token_like])
+        return int(data["totalFee"])
 
     async def get_transaction_fee(self, tx_type: FeeTxType, address: str,
                                   token_like: TokenLike) -> Fee:

@@ -87,11 +87,7 @@ class Token(BaseModel):
 
     def decimal_str_amount(self, amount: int) -> str:
         d = self.decimal_amount(amount)
-
-        # zero is the only exception where we don't add a decimal point
-        if d == 0:
-            return "0"
-
+        
         # Creates a string with `self.decimals` numbers after decimal point.
         # Prevents scientific notation (string values like '1E-8').
         # Prevents integral numbers having no decimal point in the string representation.
@@ -100,6 +96,10 @@ class Token(BaseModel):
         d_str = d_str.rstrip("0")
         if d_str[-1] == ".":
             return d_str + "0"
+
+        if '.' not in d_str:
+            return d_str + '.0'
+
         return d_str
 
 
@@ -246,8 +246,14 @@ class Transfer(EncodedTx):
         return 5
 
     def human_readable_message(self) -> str:
-        message = f"Transfer {self.token.decimal_str_amount(self.amount)} {self.token.symbol} to: {self.to_address.lower()}\nFee: {self.token.decimal_str_amount(self.fee)} {self.token.symbol}\nNonce: {self.nonce}"
-        return message
+        msg = ""
+
+        if self.amount != 0:
+            msg += f"Transfer {self.token.decimal_str_amount(self.amount)} {self.token.symbol} to: {self.to_address.lower()}\n"
+        if self.fee != 0:
+            msg += f"Fee: {self.token.decimal_str_amount(self.fee)} {self.token.symbol}\n"
+        
+        return msg + f"Nonce: {self.nonce}"
 
     def encoded_message(self) -> bytes:
         return b"".join([
@@ -297,8 +303,13 @@ class Withdraw(EncodedTx):
         return 3
 
     def human_readable_message(self) -> str:
-        message = f"Withdraw {self.token.decimal_str_amount(self.amount)} {self.token.symbol} to: {self.to_address.lower()}\nFee: {self.token.decimal_str_amount(self.fee)} {self.token.symbol}\nNonce: {self.nonce}"
-        return message
+        msg = ""
+
+        if self.amount != 0:
+            msg += f"Withdraw {self.token.decimal_str_amount(self.amount)} {self.token.symbol} to: {self.to_address.lower()}\n"
+        if self.fee != 0:
+            msg += f"Fee: {self.token.decimal_str_amount(self.fee)} {self.token.symbol}\n"
+        return msg + f"Nonce: {self.nonce}"
 
     def encoded_message(self) -> bytes:
         return b"".join([
