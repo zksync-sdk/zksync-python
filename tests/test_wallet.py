@@ -87,7 +87,7 @@ class TestWallet(IsolatedAsyncioTestCase):
         for i in range(3):
             tr, sig = await self.wallet.build_transfer(
                 "0x21dDF51966f2A66D03998B0956fe59da1b3a179F",
-                amount_wei=1, token=eth_token, fee_wei=fee, nonce=nonce+i)
+                amount=1, token=eth_token, fee=fee, nonce=nonce+i)
             trs.append(TransactionWithSignature(tr, sig))
         res = await self.wallet.send_txs_batch(trs)
         assert len(res) == 3

@@ -93,11 +93,13 @@ class Wallet:
 
         return await self.send_signed_transaction(change_pub_key, eth_signature)
 
+    # Please note that this functions takes as a parameter the integer fee of 
+    # lowest token denominations (wei, satoshi, etc.)
     async def build_change_pub_key(
         self, 
         fee_token: Token,
         eth_auth_data: Union[ChangePubKeyCREATE2, ChangePubKeyEcdsa, None],
-        fee_wei: int,
+        fee: int,
         nonce: int = None,
         valid_from=DEFAULT_VALID_FROM, 
         valid_until=DEFAULT_VALID_UNTIL
@@ -112,7 +114,7 @@ class Wallet:
             account_id=account_id,
             new_pk_hash=new_pubkey_hash,
             token=fee_token,
-            fee=fee_wei,
+            fee=fee,
             nonce=nonce,
             valid_until=valid_until,
             valid_from=valid_from,
@@ -143,11 +145,13 @@ class Wallet:
 
         return await self.send_signed_transaction(transfer, eth_signature)
 
+    # Please note that this functions takes as a parameter the integer fee of 
+    # lowest token denominations (wei, satoshi, etc.)
     async def build_forced_exit(
         self,
         target: str,
         token: Token,
-        fee_wei: int,
+        fee: int,
         nonce: int = None,
         valid_from=DEFAULT_VALID_FROM,
         valid_until=DEFAULT_VALID_UNTIL
@@ -158,7 +162,7 @@ class Wallet:
 
         forced_exit = ForcedExit(initiator_account_id=account_id,
                                  target=target,
-                                 fee=fee_wei,
+                                 fee=fee,
                                  nonce=nonce,
                                  valid_from=valid_from,
                                  valid_until=valid_until,
@@ -181,13 +185,15 @@ class Wallet:
 
         mint_nft, eth_signature = await self.build_mint_nft(content_hash, recipient, token, fee, nonce)
         return await self.send_signed_transaction(mint_nft, eth_signature)
-
+    
+    # Please note that this functions takes as a parameter the integer fee of 
+    # lowest token denominations (wei, satoshi, etc.)
     async def build_mint_nft(
         self,
         content_hash: str,
         recipient: str,
         token: Token,
-        fee_wei: int,
+        fee: int,
         nonce: int = None,
     ) -> Tuple[MintNFT, TxEthSignature]:
         if nonce is None:
@@ -198,7 +204,7 @@ class Wallet:
                            creator_address=self.address(),
                            content_hash=content_hash,
                            recipient=recipient,
-                           fee=fee_wei,
+                           fee=fee,
                            fee_token=token,
                            nonce=nonce)
         eth_signature = self.eth_signer.sign_tx(mint_nft)
@@ -230,12 +236,14 @@ class Wallet:
 
         return await self.send_signed_transaction(withdraw_nft, eth_signature)
 
+    # Please note that this functions takes as a parameter the integer fee of 
+    # lowest token denominations (wei, satoshi, etc.)
     async def build_withdraw_nft(
         self,
         to_address: str,
         nft_token: NFT,
         fee_token: Token,
-        fee_wei: int,
+        fee: int,
         nonce: int = None,
         valid_from=DEFAULT_VALID_FROM,
         valid_until=DEFAULT_VALID_UNTIL
@@ -249,7 +257,7 @@ class Wallet:
             from_address=self.address(),
             to_address=to_address,
             fee_token=fee_token,
-            fee=fee_wei,
+            fee=fee,
             nonce=nonce,
             valid_from=valid_from,
             valid_until=valid_until,
@@ -264,12 +272,14 @@ class Wallet:
     def address(self):
         return self.eth_signer.address()
 
+    # Please note that this functions takes as a parameter the integer amount/fee of 
+    # lowest token denominations (wei, satoshi, etc.)
     async def build_transfer(
         self, 
         to: str, 
-        amount_wei: int, 
+        amount: int, 
         token: Token,
-        fee_wei: int,
+        fee: int,
         nonce: int = None,
         valid_from: int=DEFAULT_VALID_FROM,
         valid_until: int=DEFAULT_VALID_UNTIL, 
@@ -280,7 +290,7 @@ class Wallet:
 
         transfer = Transfer(account_id=account_id, from_address=self.address(),
                             to_address=to.lower(),
-                            amount=amount_wei, fee=fee_wei,
+                            amount=amount, fee=fee,
                             nonce=nonce,
                             valid_from=valid_from,
                             valid_until=valid_until,
@@ -374,6 +384,8 @@ class Wallet:
                               valid_until=DEFAULT_VALID_UNTIL):
         return await self.get_order(token_sell, token_buy, ratio, ratio_type, Decimal(0), recipient, valid_from, valid_until)
 
+    # Please note that this functions takes as a parameter the integer amounts/fee of 
+    # lowest token denominations (wei, satoshi, etc.)
     async def build_swap(self, orders: Tuple[Order, Order], fee_token: Token,
                          amounts: Tuple[int, int], fee: int, nonce: int = None):
         if nonce is None:
@@ -411,6 +423,8 @@ class Wallet:
         eth_signatures = [eth_signature, swap.orders[0].eth_signature, swap.orders[1].eth_signature]
         return await self.send_signed_transaction(swap, eth_signatures)
 
+    # Please note that this functions takes as a parameter the integer amount/fee of 
+    # lowest token denominations (wei, satoshi, etc.)
     async def build_withdraw(self, eth_address: str, amount: int, token: Token,
                              fee: int,
                              nonce: int = None, 
