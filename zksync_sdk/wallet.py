@@ -57,8 +57,8 @@ class Wallet:
                               eth_auth_data: Union[ChangePubKeyCREATE2, ChangePubKeyEcdsa] = None,
                               fee: Decimal = None, nonce: int = None,
                               valid_from=DEFAULT_VALID_FROM, valid_until=DEFAULT_VALID_UNTIL):
-
-        nonce = await self.zk_provider.get_account_nonce(self.address())
+        if nonce is None:
+            nonce = await self.zk_provider.get_account_nonce(self.address())
         fee_token = await self.resolve_token(fee_token)
         if isinstance(eth_auth_data, ChangePubKeyEcdsa):
             eth_auth_type = ChangePubKeyTypes.ecdsa
@@ -93,7 +93,7 @@ class Wallet:
 
         return await self.send_signed_transaction(change_pub_key, eth_signature)
 
-    # Please note that this functions takes as a parameter the integer fee of 
+    # This function takes as a parameter the integer fee of 
     # lowest token denominations (wei, satoshi, etc.)
     async def build_change_pub_key(
         self, 
@@ -145,7 +145,7 @@ class Wallet:
 
         return await self.send_signed_transaction(transfer, eth_signature)
 
-    # Please note that this functions takes as a parameter the integer fee of 
+    # This function takes as a parameter the integer fee of 
     # lowest token denominations (wei, satoshi, etc.)
     async def build_forced_exit(
         self,
@@ -186,7 +186,7 @@ class Wallet:
         mint_nft, eth_signature = await self.build_mint_nft(content_hash, recipient, token, fee, nonce)
         return await self.send_signed_transaction(mint_nft, eth_signature)
     
-    # Please note that this functions takes as a parameter the integer fee of 
+    # This function takes as a parameter the integer fee of 
     # lowest token denominations (wei, satoshi, etc.)
     async def build_mint_nft(
         self,
@@ -236,7 +236,7 @@ class Wallet:
 
         return await self.send_signed_transaction(withdraw_nft, eth_signature)
 
-    # Please note that this functions takes as a parameter the integer fee of 
+    # This function takes as a parameter the integer fee of 
     # lowest token denominations (wei, satoshi, etc.)
     async def build_withdraw_nft(
         self,
@@ -272,7 +272,7 @@ class Wallet:
     def address(self):
         return self.eth_signer.address()
 
-    # Please note that this functions takes as a parameter the integer amount/fee of 
+    # This function takes as a parameter the integer amount/fee of 
     # lowest token denominations (wei, satoshi, etc.)
     async def build_transfer(
         self, 
@@ -348,7 +348,8 @@ class Wallet:
                         nonce: int = None,
                         valid_from=DEFAULT_VALID_FROM,
                         valid_until=DEFAULT_VALID_UNTIL) -> Order:
-        nonce = await self.zk_provider.get_account_nonce(self.address())
+        if nonce is None:
+            nonce = await self.zk_provider.get_account_nonce(self.address())
         token_sell = await self.resolve_token(token_sell)
         token_buy = await self.resolve_token(token_buy)
         recipient = recipient or self.address()
@@ -384,7 +385,7 @@ class Wallet:
                               valid_until=DEFAULT_VALID_UNTIL):
         return await self.get_order(token_sell, token_buy, ratio, ratio_type, Decimal(0), recipient, valid_from, valid_until)
 
-    # Please note that this functions takes as a parameter the integer amounts/fee of 
+    # This function takes as a parameter the integer amounts/fee of 
     # lowest token denominations (wei, satoshi, etc.)
     async def build_swap(self, orders: Tuple[Order, Order], fee_token: Token,
                          amounts: Tuple[int, int], fee: int, nonce: int = None):
@@ -401,13 +402,15 @@ class Wallet:
         return swap, eth_signature
 
     async def swap(self, orders: Tuple[Order, Order], fee_token: TokenLike,
-                         amounts: Tuple[Decimal, Decimal] = None, fee: int = None):
+                         amounts: Tuple[Decimal, Decimal] = None, fee: Decimal = None):
         nonce = await self.zk_provider.get_account_nonce(self.address())
 
         fee_token = await self.resolve_token(fee_token)
         if fee is None:
             fee = await self.zk_provider.get_transaction_fee(FeeTxType.swap, self.address(), fee_token.id)
             fee = fee.total_fee
+        else:
+            fee = fee_token.from_decimal(fee)
 
         if amounts is None:
             amounts = (orders[0].amount, orders[1].amount)
@@ -423,7 +426,7 @@ class Wallet:
         eth_signatures = [eth_signature, swap.orders[0].eth_signature, swap.orders[1].eth_signature]
         return await self.send_signed_transaction(swap, eth_signatures)
 
-    # Please note that this functions takes as a parameter the integer amount/fee of 
+    # This function takes as a parameter the integer amount/fee of 
     # lowest token denominations (wei, satoshi, etc.)
     async def build_withdraw(self, eth_address: str, amount: int, token: Token,
                              fee: int,
