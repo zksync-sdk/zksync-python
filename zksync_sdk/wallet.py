@@ -330,34 +330,10 @@ class Wallet:
         ]
         return await self.send_txs_batch(batch)
 
-    async def build_order(self, token_sell: Token, token_buy: Token,
-                        ratio: Fraction, amount: int,
-                        recipient: str,
-                        nonce: int = None,
-                        valid_from: int = DEFAULT_VALID_FROM,
-                        valid_until: int =DEFAULT_VALID_UNTIL) -> Order:
-        if nonce is None:
-            nonce = await self.zk_provider.get_account_nonce(self.address())
-        account_id = await self.get_account_id()
-
-        order = Order(account_id=account_id, recipient=recipient,
-                      token_sell=token_sell,
-                      token_buy=token_buy,
-                      ratio=ratio,
-                      amount=amount,
-                      nonce=nonce,
-                      valid_from=valid_from,
-                      valid_until=valid_until)
-
-        order.eth_signature = self.eth_signer.sign_tx(order)
-        order.signature = self.zk_signer.sign_tx(order)
-
-        return order
-
-
     async def get_order(self, token_sell: TokenLike, token_buy: TokenLike,
                         ratio: Fraction, ratio_type: RatioType, amount: Decimal,
                         recipient: str = None,
+                        nonce: int = None,
                         valid_from=DEFAULT_VALID_FROM,
                         valid_until=DEFAULT_VALID_UNTIL) -> Order:
         nonce = await self.zk_provider.get_account_nonce(self.address())
@@ -370,10 +346,24 @@ class Wallet:
             den = token_buy.from_decimal(Decimal(ratio.denominator))
             ratio = Fraction(num, den)
 
-        return await self.build_order(token_sell, token_buy, ratio, 
-                                token_sell.from_decimal(amount), 
-                                recipient, nonce, 
-                                valid_from, valid_until)
+        if nonce is None:
+            nonce = await self.zk_provider.get_account_nonce(self.address())
+        account_id = await self.get_account_id()
+
+        order = Order(account_id=account_id, recipient=recipient,
+                      token_sell=token_sell,
+                      token_buy=token_buy,
+                      ratio=ratio,
+                      amount=token_sell.from_decimal(amount),
+                      nonce=nonce,
+                      valid_from=valid_from,
+                      valid_until=valid_until)
+
+        order.eth_signature = self.eth_signer.sign_tx(order)
+        order.signature = self.zk_signer.sign_tx(order)
+
+        return order
+
 
     async def get_limit_order(self, token_sell: TokenLike, token_buy: TokenLike,
                               ratio: Fraction, ratio_type: RatioType,
