@@ -88,7 +88,6 @@ class Token(BaseModel):
     def decimal_str_amount(self, amount: int) -> str:
         d = self.decimal_amount(amount)
 
-        # zero is the only exception where we don't add a decimal point
         if d == 0:
             return "0.0"
 
@@ -101,7 +100,7 @@ class Token(BaseModel):
         if d_str[-1] == ".":
             return d_str + "0"
 
-        if d_str.find('.') == -1:
+        if '.' not in d_str:
             return d_str + '.0'
 
         return d_str

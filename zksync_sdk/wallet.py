@@ -384,10 +384,10 @@ class Wallet:
             if amounts[0] == 0 or amounts[1] == 0:
                 raise AmountsMissing("in this case you must specify amounts explicitly")
         else:
-            amounts = [
+            amounts = (
                 orders[0].token_sell.from_decimal(amounts[0]),
                 orders[1].token_sell.from_decimal(amounts[1])
-            ]
+            )
 
         swap, eth_signature = self.build_swap(orders, fee_token, amounts, fee, nonce, account_id)
         eth_signatures = [eth_signature, swap.orders[0].eth_signature, swap.orders[1].eth_signature]
