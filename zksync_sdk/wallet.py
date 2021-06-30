@@ -359,8 +359,6 @@ class Wallet:
             den = token_buy.from_decimal(Decimal(ratio.denominator))
             ratio = Fraction(num, den)
 
-        if nonce is None:
-            nonce = await self.zk_provider.get_account_nonce(self.address())
         account_id = await self.get_account_id()
 
         order = Order(account_id=account_id, recipient=recipient,
