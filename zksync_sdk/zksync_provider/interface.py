@@ -18,7 +18,7 @@ class ZkSyncProviderInterface(ABC):
         self.provider = provider
 
     @abstractmethod
-    async def submit_tx(self, tx: EncodedTx, signature: Optional[TxEthSignature],
+    async def submit_tx(self, tx: EncodedTx, signature: Union[Optional[TxEthSignature], List[Optional[TxEthSignature]]],
                         fast_processing: bool = False) -> str:
         raise NotImplementedError
 
@@ -46,7 +46,7 @@ class ZkSyncProviderInterface(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    async def get_account_nonce(self, address: str) -> Tuple[int, int]:
+    async def get_account_nonce(self, address: str) -> int:
         raise NotImplementedError
 
     @abstractmethod
@@ -62,8 +62,8 @@ class ZkSyncProviderInterface(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    async def get_transactions_batch_fee(self, tx_types: List[FeeTxType], addresses: List[Address],
-                                         token_like) -> Fee:
+    async def get_transactions_batch_fee(self, tx_types: List[FeeTxType], addresses: List[str],
+                                         token_like) -> int:
         raise NotImplementedError
 
     @abstractmethod

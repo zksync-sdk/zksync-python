@@ -42,7 +42,7 @@ class ZkSync(Contract):
         return self._call_method("depositERC20", token_address, amount, address)
 
     def full_exit(self, account_id: int, token_address: str, ):
-        return self._call_method("fullExit", account_id, token_address)
+        return self._call_method("requestFullExit", account_id, token_address)
 
     def set_auth_pub_key_hash(self, pub_key_hash: bytes, nonce: int):
         return self._call_method("setAuthPubkeyHash", pub_key_hash, nonce)
