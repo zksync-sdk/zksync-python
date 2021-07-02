@@ -398,7 +398,7 @@ class Order(EncodedTx):
     valid_from: int
     valid_until: int
     signature: Optional[TxSignature] = None
-    ethSignature: Optional[TxEthSignature] = None
+    eth_signature: Optional[TxEthSignature] = None
 
     def tx_type(self) -> int:
         raise NotImplementedError
@@ -449,7 +449,7 @@ class Order(EncodedTx):
             "validFrom":        self.valid_from,
             "validUntil":       self.valid_until,
             "signature":        self.signature.dict() if self.signature else None,
-            "ethSignature":     self.ethSignature.dict() if self.ethSignature else None,
+            "ethSignature":     self.eth_signature.dict() if self.eth_signature else None,
         }
 
 @dataclass

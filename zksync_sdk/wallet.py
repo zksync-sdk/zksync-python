@@ -371,7 +371,7 @@ class Wallet:
                       valid_from=valid_from,
                       valid_until=valid_until)
 
-        order.ethSignature = self.eth_signer.sign_tx(order)
+        order.eth_signature = self.eth_signer.sign_tx(order)
         order.signature = self.zk_signer.sign_tx(order)
 
         return order
