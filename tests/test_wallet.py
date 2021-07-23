@@ -10,6 +10,7 @@ from zksync_sdk import (EthereumProvider, EthereumSignerWeb3, HttpJsonRPCTranspo
                         ZkSyncLibrary, ZkSyncProviderV01, ZkSyncSigner, )
 from zksync_sdk.network import rinkeby
 from zksync_sdk.types import ChangePubKeyEcdsa, Token, TransactionWithSignature, RatioType
+from zksync_sdk.zksync_provider.transaction import TransactionStatus
 
 
 class TestWallet(IsolatedAsyncioTestCase):
@@ -27,7 +28,7 @@ class TestWallet(IsolatedAsyncioTestCase):
         ethereum_signer = EthereumSignerWeb3(account=account)
 
         w3 = Web3(HTTPProvider(
-                endpoint_uri="https://rinkeby.infura.io/v3/bcf42e619a704151a1b0d95a35cb2e62"))
+            endpoint_uri="https://rinkeby.infura.io/v3/bcf42e619a704151a1b0d95a35cb2e62"))
         provider = ZkSyncProviderV01(provider=HttpJsonRPCTransport(network=rinkeby))
         address = await provider.get_contract_address()
         zksync = ZkSync(account=account, web3=w3, zksync_contract_address=address.main_contract)
@@ -36,7 +37,6 @@ class TestWallet(IsolatedAsyncioTestCase):
 
         return Wallet(ethereum_provider=ethereum_provider, zk_signer=signer,
                       eth_signer=ethereum_signer, provider=provider)
-
 
     async def asyncSetUp(self):
         self.library = ZkSyncLibrary()
@@ -56,8 +56,13 @@ class TestWallet(IsolatedAsyncioTestCase):
         assert res
 
     async def test_change_pubkey(self):
-        res = await self.wallet.set_signing_key("ETH", eth_auth_data=ChangePubKeyEcdsa())
-        assert res
+        trans = await self.wallet.set_signing_key("ETH", eth_auth_data=ChangePubKeyEcdsa())
+        # assert res
+        try:
+            status = await trans.await_committed()
+            self.assertEqual(status, TransactionStatus.COMMITTED)
+        except Exception as ex:
+            assert False, str(ex)
 
     async def test_is_public_key_onset(self):
         pubkey_hash = self.wallet.zk_signer.pubkey_hash()
@@ -67,14 +72,23 @@ class TestWallet(IsolatedAsyncioTestCase):
 
     async def test_transfer(self):
         tr = await self.wallet.transfer("0x21dDF51966f2A66D03998B0956fe59da1b3a179F",
-                                amount=Decimal("0.01"), token="USDC")
-        assert tr
+                                        amount=Decimal("0.01"), token="USDC")
+        try:
+            status = await tr.await_committed(attempts=20)
+            self.assertEqual(status, TransactionStatus.COMMITTED)
+        except Exception as ex:
+            assert False, str(ex)
 
     async def test_swap(self):
         order1 = await self.wallets[0].get_order('USDT', 'ETH', Fraction(1500, 1), RatioType.token, Decimal('10.0'))
         order2 = await self.wallets[1].get_order('ETH', 'USDT', Fraction(1, 1200), RatioType.token, Decimal('0.007'))
         tr = await self.wallet.swap((order1, order2), 'ETH')
-        assert tr
+        # assert tr
+        try:
+            status = await tr.await_committed(attempts=20)
+            self.assertEqual(status, TransactionStatus.COMMITTED)
+        except Exception as ex:
+            assert False, f"test_swap, getting status raises error: {ex}"
 
     async def test_batch(self):
         trs = []
@@ -87,22 +101,35 @@ class TestWallet(IsolatedAsyncioTestCase):
         for i in range(3):
             tr, sig = await self.wallet.build_transfer(
                 "0x21dDF51966f2A66D03998B0956fe59da1b3a179F",
-                amount=1, token=eth_token, fee=fee, nonce=nonce+i)
+                amount=1, token=eth_token, fee=fee, nonce=nonce + i)
             trs.append(TransactionWithSignature(tr, sig))
         res = await self.wallet.send_txs_batch(trs)
-        assert len(res) == 3
+        self.assertEqual(len(res), 3)
+        for i, tr in enumerate(res):
+            try:
+                status = await tr.await_committed()
+                self.assertEqual(status, TransactionStatus.COMMITTED)
+            except Exception as ex:
+                assert False, f"test_batch, getting transaction {i}  result has failed with error: {ex}"
 
     async def test_forced_exit(self):
         tr = await self.wallet.forced_exit("0x21dDF51966f2A66D03998B0956fe59da1b3a179F",
                                            "USDC")
 
-        assert tr
+        try:
+            status = await tr.await_verified(attempts_timeout=1000)
+            self.assertEqual(status, TransactionStatus.VERIFIED)
+        except Exception as ex:
+            assert False, f"test_forced_exit, getting transaction result has failed with error: {ex}"
 
     async def test_mint_nft(self):
         tr = await self.wallet.mint_nft("0x0000000000000000000000000000000000000000000000000000000000000123",
                                         "0x21dDF51966f2A66D03998B0956fe59da1b3a179F", "USDC")
-
-        assert tr
+        try:
+            status = await tr.await_committed(attempts=20)
+            self.assertEqual(status, TransactionStatus.COMMITTED)
+        except Exception as ex:
+            assert False, f"test_mint_nft, getting transaction result has failed with error: {ex}"
 
     async def test_transfer_nft(self):
         account_state = await self.wallet.get_account_state()
@@ -113,10 +140,15 @@ class TestWallet(IsolatedAsyncioTestCase):
         txs = await self.wallet.transfer_nft(
             "0x995a8b7f96cb837533b79775b6209696d51f435c",
             first_value,
-            "USDC"   
+            "USDC"
         )
-
-        assert txs
+        self.assertEqual(len(txs), 2)
+        for i, tr in enumerate(txs):
+            try:
+                status = tr.await_committed(attempts=20)
+                self.assertEqual(status, TransactionStatus.COMMITTED)
+            except Exception as ex:
+                assert False, f"test_transfer_nft, transaction {i} has failed with error: {ex}"
 
     async def test_withdraw_nft(self):
         await self.wallet.mint_nft("0x0000000000000000000000000000000000000000000000000000000000000123",
@@ -128,14 +160,20 @@ class TestWallet(IsolatedAsyncioTestCase):
 
         tr = await self.wallet.withdraw_nft("0x21dDF51966f2A66D03998B0956fe59da1b3a179F",
                                             first_value, "USDC")
-
-        assert tr
+        try:
+            status = await tr.await_committed(attempts=20)
+            self.assertEqual(status, TransactionStatus.COMMITTED)
+        except Exception as ex:
+            assert False, f"test_withdraw_nft, transaction has failed with error: {ex}"
 
     async def test_withdraw(self):
         tr = await self.wallet.withdraw("0x21dDF51966f2A66D03998B0956fe59da1b3a179F",
                                         Decimal("0.000001"), "USDT")
-
-        assert tr
+        try:
+            status = tr.await_committed(attempts=30)
+            self.assertEqual(status, TransactionStatus.COMMITTED)
+        except Exception as ex:
+            assert False, f"test_withdraw, transaction has failed with error: {ex}"
 
     async def test_get_tokens(self):
         tokens = await self.wallet.zk_provider.get_tokens()
