@@ -21,6 +21,7 @@ class Balance(BaseModel):
 class Depositing(BaseModel):
     balances: Dict[str, Balance]
 
+
 class NFT(Token):
     creator_id: int
     content_hash: str
@@ -33,6 +34,7 @@ class NFT(Token):
 
     class Config:
         alias_generator = to_camel
+
 
 class State(BaseModel):
     nonce: int
