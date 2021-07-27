@@ -1,8 +1,5 @@
-from concurrent.futures import Future, ThreadPoolExecutor
 from enum import Enum, auto
-from zksync_sdk.types import TransactionDetails
 import time
-import asyncio
 
 
 class TransactionStatus(Enum):
@@ -13,7 +10,6 @@ class TransactionStatus(Enum):
 
 
 class Transaction:
-    thread_pool: ThreadPoolExecutor = None
 
     @classmethod
     def build_transaction(cls, provider, transaction_id: str):
