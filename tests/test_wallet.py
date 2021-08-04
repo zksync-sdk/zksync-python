@@ -23,7 +23,7 @@ class TestWallet(IsolatedAsyncioTestCase):
         "0xa7adf8459b4c9a62f09e0e5390983c0145fa20e88c9e5bf837d8bf3dcd05bd9c",
     ]
     receiver_address = "0x21dDF51966f2A66D03998B0956fe59da1b3a179F"
-    force_exit_account_address = "0x21dDF51966f2A66D03998B0956fe59da1b3aFFFE"
+    forced_exit_account_address = "0x21dDF51966f2A66D03998B0956fe59da1b3aFFFE"
 
     async def get_wallet(self, private_key: str) -> Wallet:
         account = Account.from_key(private_key)
@@ -122,14 +122,14 @@ class TestWallet(IsolatedAsyncioTestCase):
                 assert False, f"test_batch, getting transaction {i}  result has failed with error: {ex}"
 
     async def test_forced_exit(self):
-        result_transaction = await self.wallet.transfer(self.force_exit_account_address, Decimal("0.1"), "USDC")
+        result_transaction = await self.wallet.transfer(self.forced_exit_account_address, Decimal("0.1"), "USDC")
         status = await result_transaction.await_committed()
         self.assertEqual(status, TransactionStatus.COMMITTED)
 
         # INFO: in the case of new account there must be passed 1 hour otherwise it sends:
         # zksync_sdk.transport.ResponseError: Response error with code -32602
         #                                     Target account exists less than required minimum amount (1 hours)
-        tr = await self.wallet.forced_exit(self.force_exit_account_address, "USDC")
+        tr = await self.wallet.forced_exit(self.forced_exit_account_address, "USDC")
         try:
             status = await tr.await_verified(attempts_timeout=1000)
             self.assertEqual(status, TransactionStatus.COMMITTED)

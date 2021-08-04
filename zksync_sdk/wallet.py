@@ -324,9 +324,6 @@ class Wallet:
                            valid_from=DEFAULT_VALID_FROM,
                            valid_until=DEFAULT_VALID_UNTIL
                            ) -> List[Transaction]:
-        # -> List[TxEthSignature]: WHY THE TYPE WAS NOT TRANSACTION,
-        # because as far as I got always send_txs_batch returns List[str] ???
-        # BTW: it should always returns 2 transactions, might be better wrap to tuple(immutable type) ???
         nonce = await self.zk_provider.get_account_nonce(self.address())
         fee_token = await self.resolve_token(fee_token)
 
