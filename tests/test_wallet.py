@@ -24,6 +24,7 @@ class TestWallet(IsolatedAsyncioTestCase):
     ]
     receiver_address = "0x21dDF51966f2A66D03998B0956fe59da1b3a179F"
     forced_exit_account_address = "0x21dDF51966f2A66D03998B0956fe59da1b3aFFFE"
+    nft_transfer_account_address = "0x995a8b7f96cb837533b79775b6209696d51f435c"
 
     async def get_wallet(self, private_key: str) -> Wallet:
         account = Account.from_key(private_key)
@@ -146,51 +147,45 @@ class TestWallet(IsolatedAsyncioTestCase):
             assert False, f"test_mint_nft, getting transaction result has failed with error: {ex}"
 
     async def test_transfer_nft(self):
+        """
+        INFO: get only verified NFT tokens to transfer
+        """
         account_state = await self.wallet.get_account_state()
-        nfts = account_state.committed.nfts.values()
-        nfts_iterator = iter(nfts)
-        first_value = next(nfts_iterator)
+        nfts = account_state.verified.nfts.items()
+        first_value = None
+        for key, value in nfts:
+            if value.content_hash == "0x0000000000000000000000000000000000000000000000000000000000000123":
+                first_value = value
+                break
+        if first_value is None:
+            assert False, "can't get valid NFT token from this account"
 
         txs = await self.wallet.transfer_nft(
-            "0x995a8b7f96cb837533b79775b6209696d51f435c",
+            self.nft_transfer_account_address,
             first_value,
             "USDC"
         )
         self.assertEqual(len(txs), 2)
         for i, tr in enumerate(txs):
             try:
-                status = await tr.await_committed(attempts=100)
+                status = await tr.await_committed(attempts=1000, attempts_timeout=1000)
                 self.assertEqual(status, TransactionStatus.COMMITTED)
             except Exception as ex:
                 assert False, f"test_transfer_nft, transaction {i} has failed with error: {ex}"
 
     async def test_withdraw_nft(self):
         """
-        # Looks like there was misunderstandings, using external account but getting mint_nft from this wallet
-        # without confidence of existing nft balance
-        # + as far as I got mint_nfts can't be use as the account balance, just use nfts instead of this wallet => 
-          REDO THE TEST CASE IN BASE  
-        # Exception error: Debug Error:  Not enough nft balance
-        # transaction = await self.wallet.mint_nft("0x0000000000000000000000000000000000000000000000000000000000000123",
-        #                                          self.receiver_address,
-        #                                          # self.wallet.address(),
-        #                                          "USDC", Decimal(1))
-        # #                                         self.receiver_address, "USDC")
-        #
-        # try:
-        #     status = await transaction.await_committed(attempts=100)
-        #     self.assertEqual(status, TransactionStatus.COMMITTED)
-        # except Exception as ex:
-        #     assert False, f"test_withdraw_nft, wallet.mint_nft transaction has failed with error: {ex}"
+        INFO: check the withdraw NFT token from self, use only verified, fee is USDT that
+             must be enough for transaction
         """
         account_state = await self.wallet.get_account_state()
-        nfts = account_state.committed.nfts.values()
+        nfts = account_state.verified.nfts.values()
         nfts_iter = iter(nfts)
         first_value = next(nfts_iter)
         tr = await self.wallet.withdraw_nft(self.wallet.address(),
                                             first_value, "USDT")
         try:
-            status = await tr.await_committed(attempts=100)
+            status = await tr.await_committed(attempts=1000, attempts_timeout=1000)
             self.assertEqual(status, TransactionStatus.COMMITTED)
         except Exception as ex:
             assert False, f"test_withdraw_nft, transaction has failed with error: {ex}"
