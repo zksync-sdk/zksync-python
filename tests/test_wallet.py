@@ -148,8 +148,13 @@ class TestWallet(IsolatedAsyncioTestCase):
 
     async def test_transfer_nft(self):
         """
-        INFO: get only verified NFT tokens to transfer
+        INFO: mind the NFT token first and wait as long as needed to be sure that wallet owns the token
         """
+        tr = await self.wallet.mint_nft("0x0000000000000000000000000000000000000000000000000000000000000123",
+                                         self.wallet.address(), "USDC")
+        status = await tr.await_verified(attempts=10000, attempts_timeout=1000)
+        self.assertEqual(status, TransactionStatus.VERIFIED)
+
         account_state = await self.wallet.get_account_state()
         nfts = account_state.verified.nfts.items()
         first_value = None
