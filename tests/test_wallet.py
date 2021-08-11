@@ -161,11 +161,12 @@ class TestWallet(IsolatedAsyncioTestCase):
                   it failed
         """
         # tr = await self.wallet.mint_nft("0x0000000000000000000000000000000000000000000000000000000000000123",
-        #                                 self.wallet.address(), "USDC")
+        #                                 self.receiver_address,
+        #                                 "USDC")
         # status = await tr.await_verified(attempts=10000, attempts_timeout=1000)
         # self.assertEqual(status, TransactionStatus.VERIFIED)
 
-        account_state = await self.wallet.get_account_state()
+        account_state = await self.wallet.zk_provider.get_state(self.nft_transfer_account_address)
         nfts = account_state.verified.nfts.items()
         first_value = None
         for key, value in nfts:
@@ -176,9 +177,11 @@ class TestWallet(IsolatedAsyncioTestCase):
             return
 
         txs = await self.wallet.transfer_nft(
-            self.nft_transfer_account_address,
+            self.wallet.address(),
+            # self.receiver_address,
             first_value,
-            "USDC"
+            "USDC",
+            Decimal(0.01)
         )
         self.assertEqual(len(txs), 2)
         for i, tr in enumerate(txs):
@@ -201,19 +204,32 @@ class TestWallet(IsolatedAsyncioTestCase):
               PS: previous version of the tests was passing due to no one does not test the trasaction result
                   it failed
         """
-        account_state = await self.wallet.get_account_state()
+        account_state = await self.wallet.zk_provider.get_state(self.nft_transfer_account_address)
         nfts = account_state.verified.nfts.values()
         if not nfts:
             return
         nfts_iter = iter(nfts)
         first_value = next(nfts_iter)
-        tr = await self.wallet.withdraw_nft(self.wallet.address(),
-                                            first_value, "USDT")
+        tr = await self.wallet.withdraw_nft(self.wallet.address(), first_value, "USDC")
         try:
             status = await tr.await_committed(attempts=1000, attempts_timeout=1000)
             self.assertEqual(status, TransactionStatus.COMMITTED)
         except Exception as ex:
             assert False, f"test_withdraw_nft, transaction has failed with error: {ex}"
+
+        # account_state = await self.wallet.get_account_state()
+        # nfts = account_state.verified.nfts.values()
+        # if not nfts:
+        #     return
+        # nfts_iter = iter(nfts)
+        # first_value = next(nfts_iter)
+        # tr = await self.wallet.withdraw_nft(self.wallet.address(),
+        #                                     first_value, "USDT")
+        # try:
+        #     status = await tr.await_committed(attempts=1000, attempts_timeout=1000)
+        #     self.assertEqual(status, TransactionStatus.COMMITTED)
+        # except Exception as ex:
+        #     assert False, f"test_withdraw_nft, transaction has failed with error: {ex}"
 
     async def test_withdraw(self):
         tr = await self.wallet.withdraw(self.receiver_address,
