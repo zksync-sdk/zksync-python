@@ -118,7 +118,7 @@ class TestWallet(IsolatedAsyncioTestCase):
         self.assertEqual(len(res), 3)
         for i, tr in enumerate(res):
             try:
-                status = await tr.await_committed()
+                status = await tr.await_committed(attempts=100, attempts_timeout=500)
                 self.assertEqual(status, TransactionStatus.COMMITTED)
             except Exception as ex:
                 assert False, f"test_batch, getting transaction {i}  result has failed with error: {ex}"
