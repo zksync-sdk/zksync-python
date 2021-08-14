@@ -4,7 +4,6 @@ import time
 
 class TransactionStatus(Enum):
     FAILED = auto()
-    EXECUTED = auto()
     COMMITTED = auto()
     VERIFIED = auto()
 
@@ -16,23 +15,20 @@ class Transaction:
         transaction = cls(provider, transaction_id)
         return transaction
 
-    def __init__(self, provider, transaction_id: str):
+    def __init__(self, provider, transaction_hash: str):
         self.provider = provider
-        self.transaction_id = transaction_id
+        self.transaction_hash = transaction_hash
 
     async def await_committed(self, attempts: int = 10, attempts_timeout: int = 100):
         status = TransactionStatus.FAILED
         while True:
             if attempts <= 0:
                 return status
-            transaction_details = await self.provider.get_tx_receipt(self.transaction_id)
+            transaction_details = await self.provider.get_tx_receipt(self.transaction_hash)
             attempts -= 1
             if "failReason" in transaction_details and transaction_details["failReason"] is not None:
                 print(f"Debug Error: {transaction_details['failReason']}")
                 return TransactionStatus.FAILED
-
-            if "executed" in transaction_details and transaction_details["executed"]:
-                status = TransactionStatus.EXECUTED
 
             if "block" in transaction_details:
                 block = transaction_details["block"]
@@ -46,14 +42,11 @@ class Transaction:
             if attempts <= 0:
                 return intermediate_status
 
-            transaction_details = await self.provider.get_tx_receipt(self.transaction_id)
+            transaction_details = await self.provider.get_tx_receipt(self.transaction_hash)
             attempts -= 1
             if "failReason" in transaction_details and transaction_details["failReason"] is not None:
                 print(f"Debug Error: {transaction_details['failReason']}")
                 return TransactionStatus.FAILED
-
-            if "executed" in transaction_details and transaction_details["executed"]:
-                intermediate_status = TransactionStatus.EXECUTED
 
             if "block" in transaction_details:
                 block = transaction_details["block"]
