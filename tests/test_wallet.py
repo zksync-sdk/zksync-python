@@ -8,6 +8,7 @@ from web3 import Account, HTTPProvider, Web3
 
 from zksync_sdk import (EthereumProvider, EthereumSignerWeb3, HttpJsonRPCTransport, Wallet, ZkSync,
                         ZkSyncLibrary, ZkSyncProviderV01, ZkSyncSigner, )
+from zksync_sdk.zksync_provider.batch_builder import BatchBuilder
 from zksync_sdk.network import rinkeby
 from zksync_sdk.types import ChangePubKeyEcdsa, Token, TransactionWithSignature, RatioType
 
@@ -21,13 +22,14 @@ class TestWallet(IsolatedAsyncioTestCase):
         # 0x3aa03b5bcba43eebcb98432507474ffb3423ac94
         "0xa7adf8459b4c9a62f09e0e5390983c0145fa20e88c9e5bf837d8bf3dcd05bd9c",
     ]
+    receiver_address = "0x21dDF51966f2A66D03998B0956fe59da1b3a179F"
 
     async def get_wallet(self, private_key: str) -> Wallet:
         account = Account.from_key(private_key)
         ethereum_signer = EthereumSignerWeb3(account=account)
 
         w3 = Web3(HTTPProvider(
-                endpoint_uri="https://rinkeby.infura.io/v3/bcf42e619a704151a1b0d95a35cb2e62"))
+            endpoint_uri="https://rinkeby.infura.io/v3/bcf42e619a704151a1b0d95a35cb2e62"))
         provider = ZkSyncProviderV01(provider=HttpJsonRPCTransport(network=rinkeby))
         address = await provider.get_contract_address()
         zksync = ZkSync(account=account, web3=w3, zksync_contract_address=address.main_contract)
@@ -36,7 +38,6 @@ class TestWallet(IsolatedAsyncioTestCase):
 
         return Wallet(ethereum_provider=ethereum_provider, zk_signer=signer,
                       eth_signer=ethereum_signer, provider=provider)
-
 
     async def asyncSetUp(self):
         self.library = ZkSyncLibrary()
@@ -67,7 +68,7 @@ class TestWallet(IsolatedAsyncioTestCase):
 
     async def test_transfer(self):
         tr = await self.wallet.transfer("0x21dDF51966f2A66D03998B0956fe59da1b3a179F",
-                                amount=Decimal("0.01"), token="USDC")
+                                        amount=Decimal("0.01"), token="USDC")
         assert tr
 
     async def test_swap(self):
@@ -85,22 +86,89 @@ class TestWallet(IsolatedAsyncioTestCase):
         nonce = await self.wallet.zk_provider.get_account_nonce(self.wallet.address())
 
         for i in range(3):
-            tr, sig = await self.wallet.build_transfer(
-                "0x21dDF51966f2A66D03998B0956fe59da1b3a179F",
-                amount=1, token=eth_token, fee=fee, nonce=nonce+i)
+            tr, sig = await self.wallet.build_transfer(self.receiver_address,
+                                                       amount=1,
+                                                       token=eth_token,
+                                                       fee=fee,
+                                                       nonce=nonce + i)
             trs.append(TransactionWithSignature(tr, sig))
         res = await self.wallet.send_txs_batch(trs)
         assert len(res) == 3
 
-    async def test_forced_exit(self):
-        tr = await self.wallet.forced_exit("0x21dDF51966f2A66D03998B0956fe59da1b3a179F",
-                                           "USDC")
+    async def test_build_batch_transfer(self):
+        nonce = await self.wallet.zk_provider.get_account_nonce(self.wallet.address())
+        builder = BatchBuilder.from_wallet(self.wallet, nonce)
+        for i in range(3):
+            builder.add_transfer(self.receiver_address, "USDC", Decimal(1))
+        ret = await builder.build("USDT")
+        print(f"result : {ret}")
 
+    async def test_build_batch_change_pub_key(self):
+        nonce = await self.wallet.zk_provider.get_account_nonce(self.wallet.address())
+        builder = BatchBuilder.from_wallet(self.wallet, nonce)
+        builder.add_change_pub_key("ETH", eth_auth_type=ChangePubKeyEcdsa())
+        res = await builder.build("USDC")
+        print(f"result : {res}")
+
+    async def test_build_batch_withdraw(self):
+        nonce = await self.wallet.zk_provider.get_account_nonce(self.wallet.address())
+        builder = BatchBuilder.from_wallet(self.wallet, nonce)
+        builder.add_withdraw(self.receiver_address,
+                             "ETH",
+                             Decimal(1),
+                             Decimal("0.1")
+                             )
+        res = await builder.build("USDC")
+        print(f"result : {res}")
+
+    async def test_build_batch_mint_nft(self):
+        nonce = await self.wallet.zk_provider.get_account_nonce(self.wallet.address())
+        builder = BatchBuilder.from_wallet(self.wallet, nonce)
+        builder.add_mint_nft("0x0000000000000000000000000000000000000000000000000000000000000123",
+                             self.receiver_address,
+                             "USDC"
+                             # , Decimal(0.001) - FEE IS TOO LOW
+                             )
+        res = await builder.build("USDC")
+        print(f"result : {res}")
+
+    async def test_build_batch_withdraw_nft(self):
+        # await self.wallet.mint_nft("0x0000000000000000000000000000000000000000000000000000000000000123",
+        #                            self.receiver_address, "USDC")
+        account_state = await self.wallet.get_account_state()
+        nfts = account_state.verified.minted_nfts.values()
+        if not nfts:
+            return
+        nfts_iterator = iter(nfts)
+        first_value = next(nfts_iterator)
+
+        nonce = await self.wallet.zk_provider.get_account_nonce(self.wallet.address())
+        builder = BatchBuilder.from_wallet(self.wallet, nonce)
+        builder.add_withdraw_nft(self.receiver_address,
+                                 first_value,
+                                 "USDC"
+                                 # , Decimal("0.01") - FEE IS TOO LOW
+                                 )
+        res = await builder.build("USDC")
+        print(f"result : {res}")
+
+    async def test_build_batch_swap(self):
+        nonce = await self.wallet.zk_provider.get_account_nonce(self.wallet.address())
+        builder = BatchBuilder.from_wallet(self.wallet, nonce)
+
+        order1 = await self.wallets[0].get_order('USDT', 'ETH', Fraction(1500, 1), RatioType.token, Decimal('10.0'))
+        order2 = await self.wallets[1].get_order('ETH', 'USDT', Fraction(1, 1200), RatioType.token, Decimal('0.007'))
+        builder.add_swap((order1, order2), 'ETH', fee=Decimal("0.0001"))
+        ret = await builder.build("USDC")
+        print(f"result : {ret}")
+
+    async def test_forced_exit(self):
+        tr = await self.wallet.forced_exit(self.receiver_address, "USDC")
         assert tr
 
     async def test_mint_nft(self):
         tr = await self.wallet.mint_nft("0x0000000000000000000000000000000000000000000000000000000000000123",
-                                        "0x21dDF51966f2A66D03998B0956fe59da1b3a179F", "USDC")
+                                        self.receiver_address, "USDC")
 
         assert tr
 
@@ -113,26 +181,26 @@ class TestWallet(IsolatedAsyncioTestCase):
         txs = await self.wallet.transfer_nft(
             "0x995a8b7f96cb837533b79775b6209696d51f435c",
             first_value,
-            "USDC"   
+            "USDC"
         )
 
         assert txs
 
     async def test_withdraw_nft(self):
         await self.wallet.mint_nft("0x0000000000000000000000000000000000000000000000000000000000000123",
-                                   "0x21dDF51966f2A66D03998B0956fe59da1b3a179F", "USDC")
+                                   self.receiver_address, "USDC")
         account_state = await self.wallet.get_account_state()
         minted_nfts = account_state.committed.minted_nfts.values()
         minted_nfts_iterator = iter(minted_nfts)
         first_value = next(minted_nfts_iterator)
 
-        tr = await self.wallet.withdraw_nft("0x21dDF51966f2A66D03998B0956fe59da1b3a179F",
+        tr = await self.wallet.withdraw_nft(self.receiver_address,
                                             first_value, "USDC")
 
         assert tr
 
     async def test_withdraw(self):
-        tr = await self.wallet.withdraw("0x21dDF51966f2A66D03998B0956fe59da1b3a179F",
+        tr = await self.wallet.withdraw(self.receiver_address,
                                         Decimal("0.000001"), "USDT")
 
         assert tr

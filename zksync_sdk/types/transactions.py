@@ -53,9 +53,9 @@ class ChangePubKeyEcdsa:
         return self.batch_hash
 
     def dict(self, signature: str):
-        return {"type":         "ECDSA",
+        return {"type": "ECDSA",
                 "ethSignature": signature,
-                "batchHash":    f"0x{self.batch_hash.hex()}"}
+                "batchHash": f"0x{self.batch_hash.hex()}"}
 
 
 @dataclass
@@ -68,8 +68,8 @@ class ChangePubKeyCREATE2:
         return self.salt_arg
 
     def dict(self):
-        return {"type":     "CREATE2",
-                "saltArg":  f"0x{self.salt_arg.hex()}",
+        return {"type": "CREATE2",
+                "saltArg": f"0x{self.salt_arg.hex()}",
                 "codeHash": f"0x{self.code_hash.hex()}"}
 
 
@@ -97,7 +97,7 @@ class Token(BaseModel):
 
     def decimal_str_amount(self, amount: int) -> str:
         d = self.decimal_amount(amount)
-        
+
         # Creates a string with `self.decimals` numbers after decimal point.
         # Prevents scientific notation (string values like '1E-8').
         # Prevents integral numbers having no decimal point in the string representation.
@@ -221,17 +221,17 @@ class ChangePubKey(EncodedTx):
 
     def dict(self):
         return {
-            "type":        "ChangePubKey",
-            "accountId":   self.account_id,
-            "account":     self.account,
-            "newPkHash":   self.new_pk_hash,
-            "fee_token":   self.token.id,
-            "fee":         self.fee,
-            "nonce":       self.nonce,
+            "type": "ChangePubKey",
+            "accountId": self.account_id,
+            "account": self.account,
+            "newPkHash": self.new_pk_hash,
+            "fee_token": self.token.id,
+            "fee": self.fee,
+            "nonce": self.nonce,
             "ethAuthData": self.eth_auth_data,
-            "signature":   self.signature.dict(),
-            "validFrom":   self.valid_from,
-            "validUntil":  self.valid_until,
+            "signature": self.signature.dict(),
+            "validFrom": self.valid_from,
+            "validUntil": self.valid_until,
         }
 
     @classmethod
@@ -262,7 +262,7 @@ class Transfer(EncodedTx):
             msg += f"Transfer {self.token.decimal_str_amount(self.amount)} {self.token.symbol} to: {self.to_address.lower()}\n"
         if self.fee != 0:
             msg += f"Fee: {self.token.decimal_str_amount(self.fee)} {self.token.symbol}\n"
-        
+
         return msg + f"Nonce: {self.nonce}"
 
     def encoded_message(self) -> bytes:
@@ -282,16 +282,16 @@ class Transfer(EncodedTx):
 
     def dict(self):
         return {
-            "type":       "Transfer",
-            "accountId":  self.account_id,
-            "from":       self.from_address,
-            "to":         self.to_address,
-            "token":      self.token.id,
-            "fee":        self.fee,
-            "nonce":      self.nonce,
-            "signature":  self.signature.dict(),
-            "amount":     self.amount,
-            "validFrom":  self.valid_from,
+            "type": "Transfer",
+            "accountId": self.account_id,
+            "from": self.from_address,
+            "to": self.to_address,
+            "token": self.token.id,
+            "fee": self.fee,
+            "nonce": self.nonce,
+            "signature": self.signature.dict(),
+            "amount": self.amount,
+            "validFrom": self.valid_from,
             "validUntil": self.valid_until,
         }
 
@@ -338,16 +338,16 @@ class Withdraw(EncodedTx):
 
     def dict(self):
         return {
-            "type":       "Withdraw",
-            "accountId":  self.account_id,
-            "from":       self.from_address,
-            "to":         self.to_address,
-            "token":      self.token.id,
-            "fee":        self.fee,
-            "nonce":      self.nonce,
-            "signature":  self.signature.dict(),
-            "amount":     self.amount,
-            "validFrom":  self.valid_from,
+            "type": "Withdraw",
+            "accountId": self.account_id,
+            "from": self.from_address,
+            "to": self.to_address,
+            "token": self.token.id,
+            "fee": self.fee,
+            "nonce": self.nonce,
+            "signature": self.signature.dict(),
+            "amount": self.amount,
+            "validFrom": self.valid_from,
             "validUntil": self.valid_until,
         }
 
@@ -385,16 +385,17 @@ class ForcedExit(EncodedTx):
 
     def dict(self):
         return {
-            "type":               "ForcedExit",
+            "type": "ForcedExit",
             "initiatorAccountId": self.initiator_account_id,
-            "target":             self.target,
-            "token":              self.token.id,
-            "fee":                self.fee,
-            "nonce":              self.nonce,
-            "signature":          self.signature.dict(),
-            "validFrom":          self.valid_from,
-            "validUntil":         self.valid_until,
+            "target": self.target,
+            "token": self.token.id,
+            "fee": self.fee,
+            "nonce": self.nonce,
+            "signature": self.signature.dict(),
+            "validFrom": self.valid_from,
+            "validUntil": self.valid_until,
         }
+
 
 @dataclass
 class Order:
@@ -446,18 +447,19 @@ class Order:
 
     def dict(self):
         return {
-            "accountId":        self.account_id,
-            "recipient":        self.recipient,
-            "nonce":            self.nonce,
-            "tokenSell":        self.token_sell.id,
-            "tokenBuy":         self.token_buy.id,
-            "amount":           self.amount,
-            "ratio":            (self.ratio.numerator, self.ratio.denominator),
-            "validFrom":        self.valid_from,
-            "validUntil":       self.valid_until,
-            "signature":        self.signature.dict() if self.signature else None,
-            "ethSignature":     self.ethSignature.dict() if self.ethSignature else None,
+            "accountId": self.account_id,
+            "recipient": self.recipient,
+            "nonce": self.nonce,
+            "tokenSell": self.token_sell.id,
+            "tokenBuy": self.token_buy.id,
+            "amount": self.amount,
+            "ratio": (self.ratio.numerator, self.ratio.denominator),
+            "validFrom": self.valid_from,
+            "validUntil": self.valid_until,
+            "signature": self.signature.dict() if self.signature else None,
+            "ethSignature": self.ethSignature.dict() if self.ethSignature else None,
         }
+
 
 @dataclass
 class Swap(EncodedTx):
@@ -475,7 +477,7 @@ class Swap(EncodedTx):
 
     def human_readable_message(self) -> str:
         if self.fee != 0:
-            message =  f'Swap fee: {self.fee_token.decimal_str_amount(self.fee)} {self.fee_token.symbol}\n'
+            message = f'Swap fee: {self.fee_token.decimal_str_amount(self.fee)} {self.fee_token.symbol}\n'
         else:
             message = ''
         message += f'Nonce: {self.nonce}'
@@ -501,16 +503,17 @@ class Swap(EncodedTx):
 
     def dict(self):
         return {
-            "type":             "Swap",
-            "submitterId":      self.submitter_id,
+            "type": "Swap",
+            "submitterId": self.submitter_id,
             "submitterAddress": self.submitter_address,
-            "feeToken":         self.fee_token.id,
-            "fee":              self.fee,
-            "nonce":            self.nonce,
-            "signature":        self.signature.dict() if self.signature else None,
-            "amounts":          self.amounts,
-            "orders":           (self.orders[0].dict(), self.orders[1].dict())
+            "feeToken": self.fee_token.id,
+            "fee": self.fee,
+            "nonce": self.nonce,
+            "signature": self.signature.dict() if self.signature else None,
+            "amounts": self.amounts,
+            "orders": (self.orders[0].dict(), self.orders[1].dict())
         }
+
 
 @dataclass
 class MintNFT(EncodedTx):
@@ -545,16 +548,17 @@ class MintNFT(EncodedTx):
 
     def dict(self):
         return {
-            "type":               "MintNFT",
-            "creatorId":          self.creator_id,
-            "creatorAddress":     self.creator_address,
-            "contentHash":        self.content_hash,
-            "recipient":          self.recipient,
-            "feeToken":           self.fee_token.id,
-            "fee":                self.fee,
-            "nonce":              self.nonce,
-            "signature":          self.signature.dict(),
+            "type": "MintNFT",
+            "creatorId": self.creator_id,
+            "creatorAddress": self.creator_address,
+            "contentHash": self.content_hash,
+            "recipient": self.recipient,
+            "feeToken": self.fee_token.id,
+            "fee": self.fee,
+            "nonce": self.nonce,
+            "signature": self.signature.dict(),
         }
+
 
 @dataclass
 class WithdrawNFT(EncodedTx):
@@ -593,18 +597,19 @@ class WithdrawNFT(EncodedTx):
 
     def dict(self):
         return {
-            "type":                 "WithdrawNFT",
-            "accountId":            self.account_id,
-            "from":                 self.from_address,
-            "to":                   self.to_address,
-            "feeToken":             self.fee_token.id,
-            "fee":                  self.fee,
-            "nonce":                self.nonce,
-            "validFrom":            self.valid_from,
-            "validUntil":           self.valid_until,
-            "token":                self.token_id,
-            "signature":            self.signature.dict(),
+            "type": "WithdrawNFT",
+            "accountId": self.account_id,
+            "from": self.from_address,
+            "to": self.to_address,
+            "feeToken": self.fee_token.id,
+            "fee": self.fee,
+            "nonce": self.nonce,
+            "validFrom": self.valid_from,
+            "validUntil": self.valid_until,
+            "token": self.token_id,
+            "signature": self.signature.dict(),
         }
+
 
 @dataclass
 class TransactionWithSignature:
@@ -613,6 +618,6 @@ class TransactionWithSignature:
 
     def dict(self):
         return {
-            'tx':        self.tx.dict(),
+            'tx': self.tx.dict(),
             'signature': self.signature.dict(),
         }

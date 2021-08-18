@@ -375,7 +375,6 @@ class Wallet:
 
         return order
 
-
     async def get_limit_order(self, token_sell: TokenLike, token_buy: TokenLike,
                               ratio: Fraction, ratio_type: RatioType,
                               recipient: str = None,

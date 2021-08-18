@@ -1,5 +1,5 @@
 from zksync_sdk.zksync_provider import FeeTxType
-from zksync_sdk.zksync_provider.transaction import Transaction
+# from zksync_sdk.zksync_provider.transaction import Transaction
 from zksync_sdk.wallet import Wallet, DEFAULT_VALID_FROM, DEFAULT_VALID_UNTIL, AmountsMissing
 from zksync_sdk.types import (ChangePubKey, ChangePubKeyCREATE2, ChangePubKeyEcdsa,
                               ChangePubKeyTypes, EncodedTx, ForcedExit, Token, TokenLike,
@@ -47,14 +47,14 @@ class BatchBuilder:
                      eth_address: str,
                      token: TokenLike,
                      amount: Decimal,
-                     fee: int = None,
+                     fee: Decimal = None,
                      valid_from=DEFAULT_VALID_FROM,
                      valid_until=DEFAULT_VALID_UNTIL
                      ):
         # withdraw_coroutine = self.wallet.build_withdraw(eth_address, amount, token, fee, valid_from=valid_from,
         #                                                 valid_until=valid_until)
         withdraw = {
-            self.ENCODED_TRANSACTION_TYPE: EncodedTxType.CHANGE_PUB_KEY,
+            self.ENCODED_TRANSACTION_TYPE: EncodedTxType.WITHDRAW,
             self.IS_ENCODED_TRANSACTION: False,
             "eth_address": eth_address,
             "token": token,
@@ -73,6 +73,8 @@ class BatchBuilder:
                      nonce: int = None
                      ):
         mint_nft = {
+            self.ENCODED_TRANSACTION_TYPE: EncodedTxType.MINT_NFT,
+            self.IS_ENCODED_TRANSACTION: False,
             "content_hash": content_hash,
             "recipient": recipient,
             "fee_token": fee_token,
@@ -90,6 +92,8 @@ class BatchBuilder:
                          valid_until=DEFAULT_VALID_UNTIL
                          ):
         withdraw_nft = {
+            self.ENCODED_TRANSACTION_TYPE: EncodedTxType.WITHDRAW_NFT,
+            self.IS_ENCODED_TRANSACTION: False,
             "to_address": to_address,
             "nft_token": nft_token,
             "fee_token": fee_token,
@@ -105,7 +109,7 @@ class BatchBuilder:
     def add_swap(self,
                  orders: Tuple[Order, Order],
                  fee_token: TokenLike,
-                 amounts: Tuple[Decimal, Decimal],
+                 amounts: Tuple[Decimal, Decimal] = None,
                  fee: Decimal = None
                  ):
         # swap_coroutine = self.wallet.swap(orders, fee_token, amounts, fee)
@@ -113,7 +117,7 @@ class BatchBuilder:
             if orders[0].amount == 0 or orders[1].amount == 0:
                 raise AmountsMissing("in this case you must specify amounts explicitly")
         swap = {
-            self.ENCODED_TRANSACTION_TYPE: EncodedTxType.CHANGE_PUB_KEY,
+            self.ENCODED_TRANSACTION_TYPE: EncodedTxType.SWAP,
             self.IS_ENCODED_TRANSACTION: False,
             "orders": orders,
             "fee_token": fee_token,
@@ -132,7 +136,7 @@ class BatchBuilder:
                      ):
         # transfer_coroutine = self.wallet.transfer(address_to, amount, token, fee, valid_from, valid_until)
         transfer = {
-            self.ENCODED_TRANSACTION_TYPE: EncodedTxType.CHANGE_PUB_KEY,
+            self.ENCODED_TRANSACTION_TYPE: EncodedTxType.TRANSFER,
             self.IS_ENCODED_TRANSACTION: False,
             "from_address": self.wallet.address(),
             "to_address": address_to.lower(),
@@ -175,6 +179,8 @@ class BatchBuilder:
                        ):
         # self.wallet.build_forced_exit()
         forced_exit = {
+            self.ENCODED_TRANSACTION_TYPE: EncodedTxType.FORCED_EXIT,
+            self.IS_ENCODED_TRANSACTION: False,
             "target": target_address,
             "token": token,
             "fee": fee,
@@ -420,7 +426,8 @@ class BatchBuilder:
             )
             eth_signature = self.wallet.eth_signer.sign_tx(swap)
             swap.signature = self.wallet.zk_signer.sign_tx(swap)
-            return swap, eth_signature
+            eth_signatures = [eth_signature, swap.orders[0].eth_signature, swap.orders[1].eth_signature]
+            return swap, eth_signatures
         else:
             fee_token = await self.wallet.resolve_token(obj["feeToken"])
             swap = Swap(
@@ -462,6 +469,7 @@ class BatchBuilder:
             eth_signature = self.wallet.eth_signer.sign_tx(mint_nft)
             zk_signature = self.wallet.zk_signer.sign_tx(mint_nft)
             mint_nft.signature = zk_signature
+            return mint_nft, eth_signature
         else:
             fee_token = await self.wallet.resolve_token(obj["fee_token"])
             mint_nft = MintNFT(creator_id=obj["creatorId"],
@@ -527,30 +535,46 @@ class BatchBuilder:
 
     async def _process_transactions(self):
         trs = []
+        # INFO: special case SWAP requires all signature and interface does not allow to
+        #       have 1 to many, see TransactionWithSignature, but provider accepts the list of signatures
+        #       Hope that backend can handle it
+        #       DOES NOT WORK FOR SWAP
+        all_signatures = []
         for obj in self.transactions:
             if obj[self.ENCODED_TRANSACTION_TYPE] == EncodedTxType.CHANGE_PUB_KEY:
                 tr, sig = await self._process_change_pub_key(obj)
                 trs.append(TransactionWithSignature(tr, sig))
+                all_signatures.append(sig)
             elif obj[self.ENCODED_TRANSACTION_TYPE] == EncodedTxType.TRANSFER:
                 tr, sig = await self._process_transfer(obj)
                 trs.append(TransactionWithSignature(tr, sig))
+                all_signatures.append(sig)
             elif obj[self.ENCODED_TRANSACTION_TYPE] == EncodedTxType.WITHDRAW:
                 tr, sig = await self._process_withdraw(obj)
                 trs.append(TransactionWithSignature(tr, sig))
+                all_signatures.append(sig)
             elif obj[self.ENCODED_TRANSACTION_TYPE] == EncodedTxType.FORCED_EXIT:
                 tr, sig = await self._process_forced_exit(obj)
                 trs.append(TransactionWithSignature(tr, sig))
+                all_signatures.append(sig)
             elif obj[self.ENCODED_TRANSACTION_TYPE] == EncodedTxType.SWAP:
-                tr, sig = await self._process_swap(obj)
-                trs.append(TransactionWithSignature(tr, sig))
+                # INFO: here it produces list
+                tr, sigs = await self._process_swap(obj)
+                # INFO: fist signature relates to swap object, rest 2 relate to orders
+                #       but they must be present
+                trs.append(TransactionWithSignature(tr, sigs[0]))
+                all_signatures.append(sigs[1])
+                all_signatures.append(sigs[2])
             elif obj[self.ENCODED_TRANSACTION_TYPE] == EncodedTxType.MINT_NFT:
                 tr, sig = await self._process_mint_nft(obj)
                 trs.append(TransactionWithSignature(tr, sig))
+                all_signatures.append(sig)
             elif obj[self.ENCODED_TRANSACTION_TYPE] == EncodedTxType.WITHDRAW_NFT:
                 tr, sig = await self._process_withdraw_nft(obj)
                 trs.append(TransactionWithSignature(tr, sig))
+                all_signatures.append(sig)
             else:
                 raise TypeError("_process_transactions is trying to process unimplemented type")
-        res = await self.wallet.send_txs_batch(trs)
+        res = await self.wallet.send_txs_batch(trs, all_signatures)
         return res
 
