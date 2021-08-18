@@ -2,7 +2,7 @@ import abc
 from dataclasses import dataclass
 from decimal import Decimal
 from fractions import Fraction
-from enum import Enum
+from enum import Enum, IntEnum
 from typing import List, Optional, Union, Tuple
 
 from pydantic import BaseModel
@@ -20,6 +20,16 @@ DEFAULT_TOKEN_ADDRESS = "0x0000000000000000000000000000000000000000"
 TokenLike = Union[str, int]
 
 TRANSACTION_VERSION = 0x01
+
+
+class EncodedTxType(IntEnum):
+    CHANGE_PUB_KEY = 7
+    TRANSFER = 5
+    WITHDRAW = 3
+    FORCED_EXIT = 8
+    SWAP = 11
+    MINT_NFT = 9
+    WITHDRAW_NFT = 10
 
 
 class ChangePubKeyTypes(Enum):
@@ -226,7 +236,7 @@ class ChangePubKey(EncodedTx):
 
     @classmethod
     def tx_type(cls):
-        return 7
+        return EncodedTxType.CHANGE_PUB_KEY
 
 
 @dataclass
@@ -243,7 +253,7 @@ class Transfer(EncodedTx):
     signature: TxSignature = None
 
     def tx_type(self) -> int:
-        return 5
+        return EncodedTxType.TRANSFER
 
     def human_readable_message(self) -> str:
         msg = ""
@@ -300,7 +310,7 @@ class Withdraw(EncodedTx):
     signature: TxSignature = None
 
     def tx_type(self) -> int:
-        return 3
+        return EncodedTxType.WITHDRAW
 
     def human_readable_message(self) -> str:
         msg = ""
@@ -354,7 +364,7 @@ class ForcedExit(EncodedTx):
     signature: TxSignature = None
 
     def tx_type(self) -> int:
-        return 8
+        return EncodedTxType.FORCED_EXIT
 
     def encoded_message(self) -> bytes:
         return b"".join([
@@ -461,7 +471,7 @@ class Swap(EncodedTx):
     signature: TxSignature = None
 
     def tx_type(self) -> int:
-        return 11
+        return EncodedTxType.SWAP
 
     def human_readable_message(self) -> str:
         if self.fee != 0:
@@ -514,7 +524,7 @@ class MintNFT(EncodedTx):
     signature: TxSignature = None
 
     def tx_type(self) -> int:
-        return 9
+        return EncodedTxType.MINT_NFT
 
     def encoded_message(self) -> bytes:
         return b"".join([
@@ -560,7 +570,7 @@ class WithdrawNFT(EncodedTx):
     signature: TxSignature = None
 
     def tx_type(self) -> int:
-        return 10
+        return EncodedTxType.WITHDRAW_NFT
 
     def encoded_message(self) -> bytes:
         return b"".join([
