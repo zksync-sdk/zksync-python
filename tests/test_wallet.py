@@ -10,7 +10,8 @@ from zksync_sdk import (EthereumProvider, EthereumSignerWeb3, HttpJsonRPCTranspo
                         ZkSyncLibrary, ZkSyncProviderV01, ZkSyncSigner, )
 from zksync_sdk.zksync_provider.batch_builder import BatchBuilder
 from zksync_sdk.network import rinkeby
-from zksync_sdk.types import ChangePubKeyEcdsa, Token, TransactionWithSignature, RatioType
+from zksync_sdk.types import ChangePubKeyEcdsa, Token, TransactionWithSignature,\
+                             TransactionWithOptionalSignature, RatioType
 
 
 class TestWallet(IsolatedAsyncioTestCase):
@@ -85,7 +86,7 @@ class TestWallet(IsolatedAsyncioTestCase):
         )).total_fee
         nonce = await self.wallet.zk_provider.get_account_nonce(self.wallet.address())
 
-        for i in range(3):
+        for i in range(1):
             tr, sig = await self.wallet.build_transfer(self.receiver_address,
                                                        amount=1,
                                                        token=eth_token,
@@ -95,13 +96,49 @@ class TestWallet(IsolatedAsyncioTestCase):
         res = await self.wallet.send_txs_batch(trs)
         assert len(res) == 3
 
+    async def test_build_batch_original(self):
+        eth_token = await self.wallet.resolve_token("ETH")
+        fee = (await self.wallet.zk_provider.get_transaction_fee(
+            FeeTxType.transfer, self.receiver_address, "ETH"
+        )).total_fee
+        nonce = await self.wallet.zk_provider.get_account_nonce(self.wallet.address())
+
+        msg = []
+        trs = []
+        # test_fee = fee * 4
+        for i in range(2):
+            tr, sig = await self.wallet.build_transfer(self.receiver_address,
+                                                       amount=1,
+                                                       token=eth_token,
+                                                       fee=fee
+                                                       #, nonce=nonce
+                                                       )
+
+            trs.append(tr)
+            msg.append(tr.batch_message_part())
+        final_msg = ""
+        for m in msg:
+            final_msg += m
+        final_msg += f"Nonce: {nonce}"
+        print(f"Final message:\n{final_msg}")
+        signature = self.wallet.eth_signer.sign(final_msg.encode())
+        trans1 = TransactionWithOptionalSignature(trs[0])
+        trans2 = TransactionWithOptionalSignature(trs[1])
+        # res = await self.wallet.zk_provider.submit_trx_batch2([trans_to], [sig])
+        res = await self.wallet.zk_provider.submit_trx_batch_v2([trans1, trans2], signature)
+        print(f"result : {res}")
+
     async def test_build_batch_transfer(self):
         nonce = await self.wallet.zk_provider.get_account_nonce(self.wallet.address())
         builder = BatchBuilder.from_wallet(self.wallet, nonce)
-        for i in range(3):
+        # for i in range(3):
+        for i in range(1):
             builder.add_transfer(self.receiver_address, "USDC", Decimal(1))
-        ret = await builder.build("USDT")
-        print(f"result : {ret}")
+        build_result = await builder.build("USDT")
+        trans = await self.wallet.zk_provider.submit_trx_batch3(build_result["transactions"],
+                                                                build_result["signature"])
+        # trans = await self.wallet.send_txs_batch(build_result["transactions"], [build_result["signature"]])
+        print(f"result : {trans}")
 
     async def test_build_batch_change_pub_key(self):
         nonce = await self.wallet.zk_provider.get_account_nonce(self.wallet.address())
@@ -152,15 +189,20 @@ class TestWallet(IsolatedAsyncioTestCase):
         res = await builder.build("USDC")
         print(f"result : {res}")
 
-    async def test_build_batch_swap(self):
-        nonce = await self.wallet.zk_provider.get_account_nonce(self.wallet.address())
-        builder = BatchBuilder.from_wallet(self.wallet, nonce)
-
-        order1 = await self.wallets[0].get_order('USDT', 'ETH', Fraction(1500, 1), RatioType.token, Decimal('10.0'))
-        order2 = await self.wallets[1].get_order('ETH', 'USDT', Fraction(1, 1200), RatioType.token, Decimal('0.007'))
-        builder.add_swap((order1, order2), 'ETH', fee=Decimal("0.0001"))
-        ret = await builder.build("USDC")
-        print(f"result : {ret}")
+    # async def test_build_batch_swap(self):
+    #     nonce = await self.wallet.zk_provider.get_account_nonce(self.wallet.address())
+    #     builder = BatchBuilder.from_wallet(self.wallet, nonce)
+    #
+    #     order1 = await self.wallets[0].get_order('USDT', 'ETH', Fraction(1500, 1), RatioType.token, Decimal('10.0'))
+    #     order1.ethSignature = None
+    #     order2 = await self.wallets[1].get_order('ETH', 'USDT', Fraction(1, 1200), RatioType.token, Decimal('0.007'))
+    #     order2.ethSignature = None
+    #     builder.add_swap((order1, order2), "ETH")
+    #     build_result = await builder.build("USDC")
+    #     # trans = await self.wallet.send_txs_batch(build_result["transactions"], build_result["signature"])
+    #     trans = await self.wallet.zk_provider.submit_trx_batch2(build_result["transactions"],
+    #                                                             [build_result["signature"]])
+    #     print(f"result : {trans}")
 
     async def test_forced_exit(self):
         tr = await self.wallet.forced_exit(self.receiver_address, "USDC")

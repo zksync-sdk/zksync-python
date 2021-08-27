@@ -6,6 +6,7 @@ from web3 import Web3
 
 from zksync_sdk.types import (AccountState, ContractAddress, EncodedTx, EthOpInfo, Fee, Token,
                               TokenLike, Tokens, TransactionDetails, TransactionWithSignature,
+                              TransactionWithOptionalSignature,
                               TxEthSignature, )
 from zksync_sdk.zksync_provider.error import AccountDoesNotExist
 from zksync_sdk.zksync_provider.interface import ZkSyncProviderInterface
@@ -44,6 +45,12 @@ class ZkSyncProviderV01(ZkSyncProviderInterface):
         transactions = [tr.dict() for tr in transactions]
         signatures = [sig.dict() for sig in signatures]
         return await self.provider.request("submit_txs_batch", [transactions, signatures])
+
+    async def submit_trx_batch_v2(self, transactions: List[TransactionWithOptionalSignature],
+                                  signature: TxEthSignature) -> List[str]:
+        trans = [tr.dict() for tr in transactions]
+        params = [trans, signature.dict()]
+        return await self.provider.request("submit_txs_batch", params)
 
     async def get_contract_address(self) -> ContractAddress:
         data = await self.provider.request("contract_address", None)

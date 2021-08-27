@@ -268,7 +268,6 @@ class Wallet:
 
         return withdraw_nft, eth_signature
 
-
     def address(self):
         return self.eth_signer.address()
 
