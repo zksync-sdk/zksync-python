@@ -1,3 +1,5 @@
+from dataclasses import dataclass
+
 from zksync_sdk.zksync_provider import FeeTxType
 # from zksync_sdk.zksync_provider.transaction import Transaction
 from zksync_sdk.wallet import Wallet, DEFAULT_VALID_FROM, DEFAULT_VALID_UNTIL, AmountsMissing
@@ -10,10 +12,20 @@ from typing import List, Union
 from decimal import Decimal
 
 
+@dataclass
+class BatchResult:
+    transactions: list
+    signature: TxEthSignature
+    total_fees: dict
+
+
 class BatchBuilder:
 
     IS_ENCODED_TRANSACTION = "is_encoded_trx"
     ENCODED_TRANSACTION_TYPE = "internal_type"
+
+    TRANSACTIONS_ENTRY = "transactions"
+    SIGNATURE_ENTRY = "signature"
 
     @classmethod
     def from_wallet(cls, wallet: Wallet, nonce: int, txs: List[EncodedTx] = None):
@@ -21,6 +33,10 @@ class BatchBuilder:
         return obj
 
     def __init__(self, wallet: Wallet, nonce: int, txs: List[EncodedTx] = None):
+        """
+        INFO: if fee_token is set then it's possible to calculate the total Fee in the same coin base
+              otherwise it should have casts, Need deeper investigation
+        """
         if txs is None:
             txs = []
         self.wallet = wallet
@@ -31,21 +47,14 @@ class BatchBuilder:
             value[self.IS_ENCODED_TRANSACTION] = True
             value[self.ENCODED_TRANSACTION_TYPE] = tx.tx_type()
             self.transactions.append(value)
-        self.fee_token: TokenLike = None
 
-    async def build(self, fee_token: TokenLike) -> dict:
+    async def build(self) -> BatchResult:
         if not self.transactions:
             raise RuntimeError("Transaction batch cannot be empty")
         res = await self._process_transactions()
         trans = res["trans"]
         signature = self.wallet.eth_signer.sign(res["msg"].encode())
-        return {
-            "transactions": trans,
-            "signature": signature
-        }
-
-    def set_fee_token(self, fee_token: TokenLike):
-        raise NotImplementedError
+        return BatchResult(trans, signature, res["total_fee"])
 
     def add_withdraw(self,
                      eth_address: str,
@@ -520,36 +529,64 @@ class BatchBuilder:
     async def _process_transactions(self):
         message = ""
         trs = []
-
-        nonce = await self.wallet.zk_provider.get_account_nonce(self.wallet.address())
-
+        total_fee_map = dict()
         for obj in self.transactions:
             if obj[self.ENCODED_TRANSACTION_TYPE] == EncodedTxType.CHANGE_PUB_KEY:
                 tr = await self._process_change_pub_key(obj)
+
+                prev_value = total_fee_map.get(tr.token.symbol, Decimal(0))
+                dec_fee = tr.token.decimal_amount(tr.fee)
+                total_fee_map[tr.token.symbol] = dec_fee + prev_value
+
                 message += tr.batch_message_part()
                 trs.append(TransactionWithOptionalSignature(tr))
             elif obj[self.ENCODED_TRANSACTION_TYPE] == EncodedTxType.TRANSFER:
                 tr = await self._process_transfer(obj)
+
+                prev_value = total_fee_map.get(tr.token.symbol, Decimal(0))
+                dec_fee = tr.token.decimal_amount(tr.fee)
+                total_fee_map[tr.token.symbol] = dec_fee + prev_value
+
                 message += tr.batch_message_part()
                 trs.append(TransactionWithOptionalSignature(tr))
             elif obj[self.ENCODED_TRANSACTION_TYPE] == EncodedTxType.WITHDRAW:
                 tr = await self._process_withdraw(obj)
+
+                prev_value = total_fee_map.get(tr.token.symbol, Decimal(0))
+                dec_fee = tr.token.decimal_amount(tr.fee)
+                total_fee_map[tr.token.symbol] = dec_fee + prev_value
+
                 message += tr.batch_message_part()
                 trs.append(TransactionWithOptionalSignature(tr))
             elif obj[self.ENCODED_TRANSACTION_TYPE] == EncodedTxType.FORCED_EXIT:
                 tr = await self._process_forced_exit(obj)
+
+                prev_value = total_fee_map.get(tr.token.symbol, Decimal(0))
+                dec_fee = tr.token.decimal_amount(tr.fee)
+                total_fee_map[tr.token.symbol] = dec_fee + prev_value
+
                 message += tr.batch_message_part()
                 trs.append(TransactionWithOptionalSignature(tr))
             elif obj[self.ENCODED_TRANSACTION_TYPE] == EncodedTxType.MINT_NFT:
                 tr = await self._process_mint_nft(obj)
+
+                prev_value = total_fee_map.get(tr.fee_token.symbol, Decimal(0))
+                dec_fee = tr.fee_token.decimal_amount(tr.fee)
+                total_fee_map[tr.fee_token.symbol] = dec_fee + prev_value
+
                 message += tr.batch_message_part()
                 trs.append(TransactionWithOptionalSignature(tr))
             elif obj[self.ENCODED_TRANSACTION_TYPE] == EncodedTxType.WITHDRAW_NFT:
                 tr = await self._process_withdraw_nft(obj)
+
+                prev_value = total_fee_map.get(tr.fee_token.symbol, Decimal(0))
+                dec_fee = tr.fee_token.decimal_amount(tr.fee)
+                total_fee_map[tr.fee_token.symbol] = dec_fee + prev_value
+
                 message += tr.batch_message_part()
                 trs.append(TransactionWithOptionalSignature(tr))
             else:
                 raise TypeError("_process_transactions is trying to process unimplemented type")
-        message += f"Nonce: {nonce}"
-        result = dict(trans=trs, msg=message)
+        message += f"Nonce: {self.nonce}"
+        result = dict(trans=trs, msg=message, total_fee=total_fee_map)
         return result

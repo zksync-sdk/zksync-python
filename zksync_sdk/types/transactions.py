@@ -192,9 +192,9 @@ class ChangePubKey(EncodedTx):
         return message
 
     def batch_message_part(self) -> str:
-        message = f"Set signing key: {self.new_pk_hash.replace('sync:', '').lower()}"
+        message = f"Set signing key: {self.new_pk_hash.replace('sync:', '').lower()}\n"
         if self.fee:
-            message += f"\nFee: {self.fee} {self.token.symbol}\n"
+            message += f"Fee: {self.token.decimal_str_amount(self.fee)} {self.token.symbol}\n"
         return message
 
     def encoded_message(self) -> bytes:
