@@ -31,3 +31,19 @@ Python 3.8+
 
 zkSync Python SDK is distributed under the terms of the MIT license.
 See  [LICENSE](LICENSE) for details.
+
+
+### Batch builder ###
+Here is added ability to collect the different transaction is batch and singing it only once. For this has been added
+`BatchBuilder` class. It allows to collect the different transactions type and then build them once. For executing there must be used 
+new method `submit_trx_batch_v2` with constructed result of batches. Here is the list of supported transactions types:
+* ChangePubKey
+* Withdraw
+* MintNFT
+* WithdrawNFT
+* Transfer
+* ForceExit
+
+For creating BatchBuilder object there is necessary to provide `Wallet` object and its current Nonce.
+Also `BatchBuilder` could accept already signed transactions list, for instance,
+made by build_ method of this wallet object.

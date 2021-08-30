@@ -1,13 +1,12 @@
 from dataclasses import dataclass
 
 from zksync_sdk.zksync_provider import FeeTxType
-# from zksync_sdk.zksync_provider.transaction import Transaction
-from zksync_sdk.wallet import Wallet, DEFAULT_VALID_FROM, DEFAULT_VALID_UNTIL, AmountsMissing
+from zksync_sdk.wallet import Wallet, DEFAULT_VALID_FROM, DEFAULT_VALID_UNTIL
 from zksync_sdk.types import (ChangePubKey, ChangePubKeyCREATE2, ChangePubKeyEcdsa,
-                              ChangePubKeyTypes, EncodedTx, ForcedExit, Token, TokenLike,
-                              Tokens, TransactionWithSignature, TransactionWithOptionalSignature,
+                              ChangePubKeyTypes, EncodedTx, ForcedExit, TokenLike,
+                              TransactionWithOptionalSignature,
                               Transfer, TxEthSignature,
-                              Withdraw, MintNFT, WithdrawNFT, NFT, Order, Swap, RatioType, EncodedTxType)
+                              Withdraw, MintNFT, WithdrawNFT, NFT, EncodedTxType)
 from typing import List, Union
 from decimal import Decimal
 
@@ -33,10 +32,6 @@ class BatchBuilder:
         return obj
 
     def __init__(self, wallet: Wallet, nonce: int, txs: List[EncodedTx] = None):
-        """
-        INFO: if fee_token is set then it's possible to calculate the total Fee in the same coin base
-              otherwise it should have casts, Need deeper investigation
-        """
         if txs is None:
             txs = []
         self.wallet = wallet
@@ -80,8 +75,7 @@ class BatchBuilder:
                      content_hash: str,
                      recipient: str,
                      fee_token: TokenLike,
-                     fee: Decimal = None,
-                     nonce: int = None
+                     fee: Decimal = None
                      ):
         mint_nft = {
             self.ENCODED_TRANSACTION_TYPE: EncodedTxType.MINT_NFT,
@@ -89,8 +83,7 @@ class BatchBuilder:
             "content_hash": content_hash,
             "recipient": recipient,
             "fee_token": fee_token,
-            "fee": fee,
-            "nonce": nonce
+            "fee": fee
         }
         self.transactions.append(mint_nft)
 
@@ -197,7 +190,6 @@ class BatchBuilder:
 
     async def _process_change_pub_key(self, obj: dict):
         if not obj[self.IS_ENCODED_TRANSACTION]:
-            nonce = await self.wallet.zk_provider.get_account_nonce(self.wallet.address())
             account_id = await self.wallet.get_account_id()
             token = await self.wallet.resolve_token(obj["fee_token"])
             eth_auth_type = obj["eth_auth_type"]
@@ -233,7 +225,7 @@ class BatchBuilder:
                 new_pk_hash=obj["new_pk_hash"],
                 token=token,
                 fee=fee,
-                nonce=nonce,
+                nonce=self.nonce,
                 valid_from=obj["valid_from"],
                 valid_until=obj["valid_until"],
                 eth_auth_data=obj["eth_auth_type"]
@@ -252,7 +244,7 @@ class BatchBuilder:
                 new_pk_hash=obj["newPkHash"],
                 token=obj["fee_token"],
                 fee=obj["fee"],
-                nonce=obj["nonce"],
+                nonce=self.nonce,
                 eth_auth_data=obj["ethAuthData"],
                 signature=obj["signature"],
                 valid_from=obj["validFrom"],
@@ -262,7 +254,6 @@ class BatchBuilder:
 
     async def _process_withdraw(self, obj: dict):
         if not obj[self.IS_ENCODED_TRANSACTION]:
-            nonce = await self.wallet.zk_provider.get_account_nonce(self.wallet.address())
             account_id = await self.wallet.get_account_id()
             token = await self.wallet.resolve_token(obj["token"])
 
@@ -281,7 +272,7 @@ class BatchBuilder:
                                 to_address=obj["eth_address"],
                                 amount=amount,
                                 fee=fee,
-                                nonce=nonce,
+                                nonce=self.nonce,
                                 valid_from=obj["valid_from"],
                                 valid_until=obj["valid_until"],
                                 token=token)
@@ -294,7 +285,7 @@ class BatchBuilder:
                                 to_address=obj["to"],
                                 amount=obj["amount"],
                                 fee=obj["fee"],
-                                nonce=obj["nonce"],
+                                nonce=self.nonce,
                                 valid_from=obj["validFrom"],
                                 valid_until=obj["validUntil"],
                                 token=token,
@@ -304,7 +295,6 @@ class BatchBuilder:
 
     async def _process_transfer(self, obj):
         if not obj[self.IS_ENCODED_TRANSACTION]:
-            nonce = await self.wallet.zk_provider.get_account_nonce(self.wallet.address())
             account_id = await self.wallet.get_account_id()
             token = await self.wallet.resolve_token(obj["token"])
 
@@ -325,7 +315,7 @@ class BatchBuilder:
                 token=token,
                 amount=amount,
                 fee=fee,
-                nonce=nonce,
+                nonce=self.nonce,
                 valid_from=obj["valid_from"],
                 valid_until=obj["valid_until"]
             )
@@ -340,7 +330,7 @@ class BatchBuilder:
                 token=token,
                 amount=obj["amount"],
                 fee=obj["fee"],
-                nonce=obj["nonce"],
+                nonce=self.nonce,
                 valid_from=obj["validFrom"],
                 valid_until=obj["validUntil"],
                 signature=obj["signature"]
@@ -349,7 +339,6 @@ class BatchBuilder:
 
     async def _process_forced_exit(self, obj):
         if not obj[self.IS_ENCODED_TRANSACTION]:
-            nonce = await self.wallet.zk_provider.get_account_nonce(self.wallet.address())
             account_id = await self.wallet.get_account_id()
             token = await self.wallet.resolve_token(obj["token"])
             fee = obj["fee"]
@@ -363,7 +352,7 @@ class BatchBuilder:
             forced_exit = ForcedExit(initiator_account_id=account_id,
                                      target=obj["target"],
                                      fee=fee,
-                                     nonce=nonce,
+                                     nonce=self.nonce,
                                      valid_from=obj["valid_from"],
                                      valid_until=obj["valid_until"],
                                      token=token)
@@ -374,7 +363,7 @@ class BatchBuilder:
             forced_exit = ForcedExit(initiator_account_id=obj["initiatorAccountId"],
                                      target=obj["target"],
                                      fee=obj["fee"],
-                                     nonce=obj["nonce"],
+                                     nonce=self.nonce,
                                      valid_from=obj["valid_from"],
                                      valid_until=obj["valid_until"],
                                      token=token,
@@ -444,9 +433,6 @@ class BatchBuilder:
 
     async def _process_mint_nft(self, obj):
         if not obj[self.IS_ENCODED_TRANSACTION]:
-            nonce = obj["nonce"]
-            if nonce is None:
-                nonce = await self.wallet.zk_provider.get_account_nonce(self.wallet.address())
             fee_token = await self.wallet.resolve_token(obj["fee_token"])
             account_id = await self.wallet.get_account_id()
 
@@ -464,7 +450,7 @@ class BatchBuilder:
                                recipient=obj["recipient"],
                                fee=fee,
                                fee_token=fee_token,
-                               nonce=nonce)
+                               nonce=self.nonce)
             zk_signature = self.wallet.zk_signer.sign_tx(mint_nft)
             mint_nft.signature = zk_signature
         else:
@@ -475,14 +461,14 @@ class BatchBuilder:
                                recipient=obj["recipient"],
                                fee=obj["fee"],
                                fee_token=fee_token,
-                               nonce=obj["nonce"],
+                               nonce=self.nonce,
                                signature=obj["signature"]
                                )
         return mint_nft
 
     async def _process_withdraw_nft(self, obj):
         if not obj[self.IS_ENCODED_TRANSACTION]:
-            nonce = await self.wallet.zk_provider.get_account_nonce(self.wallet.address())
+            # nonce = await self.wallet.zk_provider.get_account_nonce(self.wallet.address())
             fee_token = await self.wallet.resolve_token(obj["fee_token"])
 
             fee = obj["fee"]
@@ -503,7 +489,7 @@ class BatchBuilder:
                 to_address=obj["to_address"],
                 fee_token=fee_token,
                 fee=fee,
-                nonce=nonce,
+                nonce=self.nonce,
                 valid_from=obj["valid_from"],
                 valid_until=obj["valid_until"],
                 token_id=obj["nft_token"].id
