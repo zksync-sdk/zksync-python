@@ -178,16 +178,17 @@ class TestWallet(IsolatedAsyncioTestCase):
     async def test_transfer_nft(self):
         account_state = await self.wallet.get_account_state()
         nfts = account_state.committed.nfts.values()
-        nfts_iterator = iter(nfts)
-        first_value = next(nfts_iterator)
+        if nfts:
+            nfts_iterator = iter(nfts)
+            first_value = next(nfts_iterator)
 
-        txs = await self.wallet.transfer_nft(
-            "0x995a8b7f96cb837533b79775b6209696d51f435c",
-            first_value,
-            "USDC"
-        )
+            txs = await self.wallet.transfer_nft(
+                "0x995a8b7f96cb837533b79775b6209696d51f435c",
+                first_value,
+                "USDC"
+            )
 
-        assert txs
+            assert txs
 
     async def test_withdraw_nft(self):
         await self.wallet.mint_nft("0x0000000000000000000000000000000000000000000000000000000000000123",
