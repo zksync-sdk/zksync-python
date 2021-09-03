@@ -10,6 +10,7 @@ from zksync_sdk.types import (AccountState, ContractAddress, EncodedTx, EthOpInf
                               TransactionWithOptionalSignature,
                               TxEthSignature, )
 from zksync_sdk.zksync_provider.types import FeeTxType
+from zksync_sdk.zksync_provider.transaction import Transaction
 
 __all__ = ['ZkSyncProviderInterface']
 
@@ -20,7 +21,7 @@ class ZkSyncProviderInterface(ABC):
 
     @abstractmethod
     async def submit_tx(self, tx: EncodedTx, signature: Union[Optional[TxEthSignature], List[Optional[TxEthSignature]]],
-                        fast_processing: bool = False) -> str:
+                        fast_processing: bool = False) -> Transaction:
         raise NotImplementedError
 
     @abstractmethod
@@ -31,7 +32,7 @@ class ZkSyncProviderInterface(ABC):
     async def submit_txs_batch(self, transactions: List[TransactionWithSignature],
                                signatures: Optional[
                                    Union[List[TxEthSignature], TxEthSignature]
-                               ] = None) -> List[str]:
+                               ] = None) -> List[Transaction]:
         raise NotImplementedError
 
     @abstractmethod
