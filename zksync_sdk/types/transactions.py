@@ -514,8 +514,11 @@ class Swap(EncodedTx):
         return message
 
     def batch_message_part(self) -> str:
-        """ Swap can't be implemented for batching at server side yet"""
-        raise NotImplementedError
+        if self.fee != 0:
+            message = f'Swap fee: {self.fee_token.decimal_str_amount(self.fee)} {self.fee_token.symbol}\n'
+        else:
+            message = ''
+        return message
 
     def encoded_message(self) -> bytes:
         order_bytes = b''.join([
@@ -577,7 +580,8 @@ class MintNFT(EncodedTx):
         ])
 
     def human_readable_message(self) -> str:
-        message = f"MintNFT {self.content_hash} for: {self.recipient.lower()}\nFee: {self.fee_token.decimal_str_amount(self.fee)} {self.fee_token.symbol}\nNonce: {self.nonce}"
+        message = f"MintNFT {self.content_hash} for: {self.recipient.lower()}\n"\
+                f"Fee: {self.fee_token.decimal_str_amount(self.fee)} {self.fee_token.symbol}\nNonce: {self.nonce}"
         return message
 
     def batch_message_part(self) -> str:
@@ -670,7 +674,7 @@ class TransactionWithSignature:
 @dataclass()
 class TransactionWithOptionalSignature:
     tx: EncodedTx
-    signature: TxEthSignature = None
+    signature: Union[None, TxEthSignature, List[TxSignature]]
 
     def dict(self):
         if self.signature is None:
@@ -680,7 +684,20 @@ class TransactionWithOptionalSignature:
                 'tx': self.tx.dict()
             }
         else:
-            return {
-                'signature': self.signature.dict(),
-                'tx': self.tx.dict()
-            }
+            if isinstance(self.signature, list):
+                null_value = None
+                value = []
+                for sig in self.signature:
+                    if sig is None:
+                        value.append(null_value)
+                    else:
+                        value.append(sig.dict())
+                return {
+                    'signature': value,
+                    'tx': self.tx.dict()
+                }
+            else:
+                return {
+                    'signature': self.signature.dict(),
+                    'tx': self.tx.dict()
+                }

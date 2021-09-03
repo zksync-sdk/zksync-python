@@ -165,6 +165,22 @@ class TestWallet(IsolatedAsyncioTestCase):
                                                                 build_result.signature)
         print(f"result : {res}")
 
+    async def test_build_batch_swap(self):
+        nonce = await self.wallet.zk_provider.get_account_nonce(self.wallet.address())
+        builder = BatchBuilder.from_wallet(self.wallet, nonce)
+
+        for i in range(2):
+            order1 = await self.wallets[0].get_order('USDT', 'ETH', Fraction(500, 1), RatioType.token, Decimal('10.0'))
+            order2 = await self.wallets[1].get_order('ETH', 'USDT', Fraction(1, 600), RatioType.token, Decimal('0.007'))
+            builder.add_swap((order1, order2), 'ETH')
+        build_result = await builder.build()
+        print(f"Total fees: {build_result.total_fees}")
+        res = await self.wallet.zk_provider.submit_trx_batch_v2(build_result.transactions,
+                                                                build_result.signature)
+        self.assertEqual(len(res), 2)
+        self.assertIn('sync-tx', res[0])
+        self.assertIn('sync-tx', res[1])
+
     async def test_forced_exit(self):
         tr = await self.wallet.forced_exit(self.receiver_address, "USDC")
         assert tr

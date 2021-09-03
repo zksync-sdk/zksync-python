@@ -1,13 +1,13 @@
 from dataclasses import dataclass
 
 from zksync_sdk.zksync_provider import FeeTxType
-from zksync_sdk.wallet import Wallet, DEFAULT_VALID_FROM, DEFAULT_VALID_UNTIL
+from zksync_sdk.wallet import Wallet, DEFAULT_VALID_FROM, DEFAULT_VALID_UNTIL, AmountsMissing
 from zksync_sdk.types import (ChangePubKey, ChangePubKeyCREATE2, ChangePubKeyEcdsa,
                               ChangePubKeyTypes, EncodedTx, ForcedExit, TokenLike,
                               TransactionWithOptionalSignature,
                               Transfer, TxEthSignature,
-                              Withdraw, MintNFT, WithdrawNFT, NFT, EncodedTxType)
-from typing import List, Union
+                              Withdraw, MintNFT, WithdrawNFT, NFT, EncodedTxType, Order, Swap)
+from typing import List, Union, Tuple
 from decimal import Decimal
 
 
@@ -107,26 +107,24 @@ class BatchBuilder:
         }
         self.transactions.append(withdraw_nft)
 
-    # INFO: In discussion it has been figured out that SWAP operation can't be implemented in batch for now
-    # def add_swap(self,
-    #              orders: Tuple[Order, Order],
-    #              fee_token: TokenLike,
-    #              amounts: Tuple[Decimal, Decimal] = None,
-    #              fee: Decimal = None
-    #              ):
-    #     # swap_coroutine = self.wallet.swap(orders, fee_token, amounts, fee)
-    #     if amounts is None:
-    #         if orders[0].amount == 0 or orders[1].amount == 0:
-    #             raise AmountsMissing("in this case you must specify amounts explicitly")
-    #     swap = {
-    #         self.ENCODED_TRANSACTION_TYPE: EncodedTxType.SWAP,
-    #         self.IS_ENCODED_TRANSACTION: False,
-    #         "orders": orders,
-    #         "fee_token": fee_token,
-    #         "amounts": amounts,
-    #         "fee": fee
-    #     }
-    #     self.transactions.append(swap)
+    def add_swap(self,
+                 orders: Tuple[Order, Order],
+                 fee_token: TokenLike,
+                 amounts: Tuple[Decimal, Decimal] = None,
+                 fee: Decimal = None
+                 ):
+        if amounts is None:
+            if orders[0].amount == 0 or orders[1].amount == 0:
+                raise AmountsMissing("in this case you must specify amounts explicitly")
+        swap = {
+            self.ENCODED_TRANSACTION_TYPE: EncodedTxType.SWAP,
+            self.IS_ENCODED_TRANSACTION: False,
+            "orders": orders,
+            "fee_token": fee_token,
+            "amounts": amounts,
+            "fee": fee
+        }
+        self.transactions.append(swap)
 
     def add_transfer(self,
                      address_to: str,
@@ -237,7 +235,6 @@ class BatchBuilder:
             zk_signature = self.wallet.zk_signer.sign_tx(change_pub_key)
             change_pub_key.signature = zk_signature
         else:
-            # INFO: might need to check, signed or not
             change_pub_key = ChangePubKey(
                 account_id=obj["accountId"],
                 account=obj["account"],
@@ -370,66 +367,62 @@ class BatchBuilder:
                                      signature=obj["signature"])
         return forced_exit
 
-    # async def _process_swap(self, obj):
-    #     if not obj[self.IS_ENCODED_TRANSACTION]:
-    #         nonce = await self.wallet.zk_provider.get_account_nonce(self.wallet.address())
-    #         fee_token = await self.wallet.resolve_token(obj["fee_token"])
-    #         fee = obj["fee"]
-    #         if fee is None:
-    #             fee = await self.wallet.zk_provider.get_transaction_fee(FeeTxType.swap,
-    #                                                                     self.wallet.address(),
-    #                                                                     fee_token.id)
-    #             fee = fee.total_fee
-    #         else:
-    #             fee = fee_token.from_decimal(fee)
-    #
-    #         amounts = obj["amounts"]
-    #         orders = obj["orders"]
-    #         if amounts is None:
-    #             # INFO: validation is happening in add_swap method, should not raise exception
-    #             amounts = (orders[0].amount, orders[1].amount)
-    #         else:
-    #             amounts = (
-    #                 orders[0].token_sell.from_decimal(amounts[0]),
-    #                 orders[1].token_sell.from_decimal(amounts[1])
-    #             )
-    #         if nonce is None:
-    #             nonce = await self.wallet.zk_provider.get_account_nonce(self.wallet.address())
-    #         account_id = await self.wallet.get_account_id()
-    #
-    #         swap = Swap(
-    #             orders=orders,
-    #             fee_token=fee_token,
-    #             amounts=amounts,
-    #             fee=fee,
-    #             nonce=nonce,
-    #             submitter_id=account_id,
-    #             submitter_address=self.wallet.address()
-    #         )
-    #         # eth_signature = self.wallet.eth_signer.sign_tx(swap)
-    #         # swap.signature = self.wallet.zk_signer.sign_tx(swap)
-    #         # # eth_signatures = [eth_signature, swap.orders[0].eth_signature, swap.orders[1].eth_signature]
-    #         # # return swap, eth_signatures
-    #         # return swap, eth_signature
-    #         swap.signature = self.wallet.zk_signer.sign_tx(swap)
-    #         # msg = get_swap_message_part(fee_token, fee)
-    #         msg = swap.human_readable_message()
-    #         return swap, msg
-    #     else:
-    #         fee_token = await self.wallet.resolve_token(obj["feeToken"])
-    #         swap = Swap(
-    #             orders=obj["orders"],
-    #             fee_token=fee_token,
-    #             amounts=obj["amounts"],
-    #             fee=obj["fee"],
-    #             nonce=obj["nonce"],
-    #             submitter_id=obj["submitterId"],
-    #             submitter_address=obj["submitterAddress"],
-    #             signature=obj["signature"]
-    #         )
-    #         # eth_signature = self.wallet.eth_signer.sign_tx(swap)
-    #         # return swap, eth_signature
-    #         return swap
+    async def _process_swap(self, obj):
+        if not obj[self.IS_ENCODED_TRANSACTION]:
+            fee_token = await self.wallet.resolve_token(obj["fee_token"])
+            fee = obj["fee"]
+            if fee is None:
+                fee = await self.wallet.zk_provider.get_transaction_fee(FeeTxType.swap,
+                                                                        self.wallet.address(),
+                                                                        fee_token.id)
+                fee = fee.total_fee
+            else:
+                fee = fee_token.from_decimal(fee)
+
+            amounts = obj["amounts"]
+            orders = obj["orders"]
+            if amounts is None:
+                # INFO: validation is happening in add_swap method, should not raise exception
+                amounts = (orders[0].amount, orders[1].amount)
+            else:
+                amounts = (
+                    orders[0].token_sell.from_decimal(amounts[0]),
+                    orders[1].token_sell.from_decimal(amounts[1])
+                )
+            account_id = await self.wallet.get_account_id()
+            # orders[0].ethSignature = orders[0].eth_signature
+            # orders[1].ethSignature = orders[1].eth_signature
+            swap = Swap(
+                orders=orders,
+                fee_token=fee_token,
+                amounts=amounts,
+                fee=fee,
+                nonce=self.nonce,
+                submitter_id=account_id,
+                submitter_address=self.wallet.address()
+            )
+            # eth_signature = self.wallet.eth_signer.sign_tx(swap)
+            # swap.signature = self.wallet.zk_signer.sign_tx(swap)
+            # # eth_signatures = [eth_signature, swap.orders[0].eth_signature, swap.orders[1].eth_signature]
+            # # return swap, eth_signatures
+            # return swap, eth_signature
+            swap.signature = self.wallet.zk_signer.sign_tx(swap)
+            return swap
+        else:
+            fee_token = await self.wallet.resolve_token(obj["feeToken"])
+            swap = Swap(
+                orders=obj["orders"],
+                fee_token=fee_token,
+                amounts=obj["amounts"],
+                fee=obj["fee"],
+                nonce=obj["nonce"],
+                submitter_id=obj["submitterId"],
+                submitter_address=obj["submitterAddress"],
+                signature=obj["signature"]
+            )
+            # eth_signature = self.wallet.eth_signer.sign_tx(swap)
+            # return swap, eth_signature
+            return swap
 
     async def _process_mint_nft(self, obj):
         if not obj[self.IS_ENCODED_TRANSACTION]:
@@ -468,7 +461,6 @@ class BatchBuilder:
 
     async def _process_withdraw_nft(self, obj):
         if not obj[self.IS_ENCODED_TRANSACTION]:
-            # nonce = await self.wallet.zk_provider.get_account_nonce(self.wallet.address())
             fee_token = await self.wallet.resolve_token(obj["fee_token"])
 
             fee = obj["fee"]
@@ -571,6 +563,17 @@ class BatchBuilder:
 
                 message += tr.batch_message_part()
                 trs.append(TransactionWithOptionalSignature(tr))
+            elif obj[self.ENCODED_TRANSACTION_TYPE] == EncodedTxType.SWAP:
+                tr = await self._process_swap(obj)
+
+                prev_value = total_fee_map.get(tr.fee_token.symbol, Decimal(0))
+                dec_fee = tr.fee_token.decimal_amount(tr.fee)
+                total_fee_map[tr.fee_token.symbol] = dec_fee + prev_value
+                message += tr.batch_message_part()
+                trs.append(TransactionWithOptionalSignature(tr, [None,
+                                                                 tr.orders[0].eth_signature,
+                                                                 tr.orders[1].eth_signature]
+                                                            ))
             else:
                 raise TypeError("_process_transactions is trying to process unimplemented type")
         message += f"Nonce: {self.nonce}"

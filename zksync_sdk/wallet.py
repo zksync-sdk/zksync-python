@@ -26,6 +26,7 @@ class TokenNotFoundError(WalletError):
 class AmountsMissing(WalletError):
     pass
 
+
 class Wallet:
     def __init__(self, ethereum_provider: EthereumProvider, zk_signer: ZkSyncSigner,
                  eth_signer: EthereumSignerInterface, provider: ZkSyncProviderInterface):

@@ -43,6 +43,7 @@ new method `submit_trx_batch_v2` with constructed result of batches. Here is the
 * WithdrawNFT
 * Transfer
 * ForceExit
+* Swap
 
 For creating BatchBuilder object there is necessary to provide `Wallet` object and its current Nonce.
 Also `BatchBuilder` could accept already signed transactions list, for instance,
