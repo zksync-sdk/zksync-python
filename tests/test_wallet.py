@@ -85,14 +85,14 @@ class TestWallet(IsolatedAsyncioTestCase):
             assert False, str(ex)
 
     async def test_swap(self):
-        amount = 0.01
-        eth_token_name = "ETH"
-        eth_token = await self.wallets[0].resolve_token(eth_token_name)
-        await self.wallets[0].ethereum_provider.approve_deposit(eth_token, Decimal(amount))
-        await self.wallets[0].ethereum_provider.deposit(eth_token, Decimal(amount), self.wallets[0].address())
-        trans = await self.wallets[0].set_signing_key(eth_token_name, eth_auth_data=ChangePubKeyEcdsa())
-        status = await trans.await_committed()
-        self.assertEqual(status, TransactionStatus.COMMITTED)
+        # amount = 0.01
+        # eth_token_name = "ETH"
+        # eth_token = await self.wallets[0].resolve_token(eth_token_name)
+        # await self.wallets[0].ethereum_provider.approve_deposit(eth_token, Decimal(amount))
+        # await self.wallets[0].ethereum_provider.deposit(eth_token, Decimal(amount), self.wallets[0].address())
+        # trans = await self.wallets[0].set_signing_key(eth_token_name, eth_auth_data=ChangePubKeyEcdsa())
+        # status = await trans.await_committed()
+        # self.assertEqual(status, TransactionStatus.COMMITTED)
 
         order1 = await self.wallet.get_order('USDT', 'ETH', Fraction(1500, 1), RatioType.token, Decimal('10.0'))
         order2 = await self.wallets[0].get_order('ETH', 'USDT', Fraction(1, 1200), RatioType.token, Decimal('0.007'))
