@@ -50,10 +50,11 @@ class ZkSyncProviderV01(ZkSyncProviderInterface):
         return [Transaction.build_transaction(self, trans_id) for trans_id in trans_ids]
 
     async def submit_trx_batch_v2(self, transactions: List[TransactionWithOptionalSignature],
-                                  signature: TxEthSignature) -> List[str]:
+                                  signature: TxEthSignature) -> List[Transaction]:
         trans = [tr.dict() for tr in transactions]
         params = [trans, signature.dict()]
-        return await self.provider.request("submit_txs_batch", params)
+        trans_ids: List[str] = await self.provider.request("submit_txs_batch", params)
+        return [Transaction.build_transaction(self, trans_id) for trans_id in trans_ids]
 
     async def get_contract_address(self) -> ContractAddress:
         data = await self.provider.request("contract_address", None)

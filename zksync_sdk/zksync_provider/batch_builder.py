@@ -36,6 +36,7 @@ class BatchBuilder:
             txs = []
         self.wallet = wallet
         self.nonce = nonce
+        self.batch_nonce = nonce
         self.transactions: List[dict] = []
         for tx in txs:
             value = tx.dict()
@@ -247,6 +248,7 @@ class BatchBuilder:
                 valid_from=obj["validFrom"],
                 valid_until=obj["validUntil"]
             )
+        self.nonce += 1
         return change_pub_key
 
     async def _process_withdraw(self, obj: dict):
@@ -288,6 +290,7 @@ class BatchBuilder:
                                 token=token,
                                 signature=obj["signature"]
                                 )
+        self.nonce += 1
         return withdraw
 
     async def _process_transfer(self, obj):
@@ -332,6 +335,7 @@ class BatchBuilder:
                 valid_until=obj["validUntil"],
                 signature=obj["signature"]
             )
+        self.nonce += 1
         return transfer
 
     async def _process_forced_exit(self, obj):
@@ -365,6 +369,7 @@ class BatchBuilder:
                                      valid_until=obj["valid_until"],
                                      token=token,
                                      signature=obj["signature"])
+        self.nonce += 1
         return forced_exit
 
     async def _process_swap(self, obj):
@@ -382,7 +387,6 @@ class BatchBuilder:
             amounts = obj["amounts"]
             orders = obj["orders"]
             if amounts is None:
-                # INFO: validation is happening in add_swap method, should not raise exception
                 amounts = (orders[0].amount, orders[1].amount)
             else:
                 amounts = (
@@ -390,8 +394,6 @@ class BatchBuilder:
                     orders[1].token_sell.from_decimal(amounts[1])
                 )
             account_id = await self.wallet.get_account_id()
-            # orders[0].ethSignature = orders[0].eth_signature
-            # orders[1].ethSignature = orders[1].eth_signature
             swap = Swap(
                 orders=orders,
                 fee_token=fee_token,
@@ -401,13 +403,7 @@ class BatchBuilder:
                 submitter_id=account_id,
                 submitter_address=self.wallet.address()
             )
-            # eth_signature = self.wallet.eth_signer.sign_tx(swap)
-            # swap.signature = self.wallet.zk_signer.sign_tx(swap)
-            # # eth_signatures = [eth_signature, swap.orders[0].eth_signature, swap.orders[1].eth_signature]
-            # # return swap, eth_signatures
-            # return swap, eth_signature
             swap.signature = self.wallet.zk_signer.sign_tx(swap)
-            return swap
         else:
             fee_token = await self.wallet.resolve_token(obj["feeToken"])
             swap = Swap(
@@ -415,14 +411,13 @@ class BatchBuilder:
                 fee_token=fee_token,
                 amounts=obj["amounts"],
                 fee=obj["fee"],
-                nonce=obj["nonce"],
+                nonce=self.nonce,
                 submitter_id=obj["submitterId"],
                 submitter_address=obj["submitterAddress"],
                 signature=obj["signature"]
             )
-            # eth_signature = self.wallet.eth_signer.sign_tx(swap)
-            # return swap, eth_signature
-            return swap
+        self.nonce += 1
+        return swap
 
     async def _process_mint_nft(self, obj):
         if not obj[self.IS_ENCODED_TRANSACTION]:
@@ -457,6 +452,7 @@ class BatchBuilder:
                                nonce=self.nonce,
                                signature=obj["signature"]
                                )
+        self.nonce += 1
         return mint_nft
 
     async def _process_withdraw_nft(self, obj):
@@ -502,6 +498,7 @@ class BatchBuilder:
                 token_id=obj["nft_token"].id,
                 signature=obj["signature"]
             )
+        self.nonce += 1
         return withdraw_nft
 
     async def _process_transactions(self):
@@ -576,6 +573,6 @@ class BatchBuilder:
                                                             ))
             else:
                 raise TypeError("_process_transactions is trying to process unimplemented type")
-        message += f"Nonce: {self.nonce}"
+        message += f"Nonce: {self.batch_nonce}"
         result = dict(trans=trs, msg=message, total_fee=total_fee_map)
         return result

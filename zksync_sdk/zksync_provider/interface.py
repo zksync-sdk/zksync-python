@@ -37,7 +37,7 @@ class ZkSyncProviderInterface(ABC):
 
     @abstractmethod
     async def submit_trx_batch_v2(self, transactions: List[TransactionWithOptionalSignature],
-                                  signature: TxEthSignature) -> List[str]:
+                                  signature: TxEthSignature) -> List[Transaction]:
         raise NotImplementedError
 
     @abstractmethod

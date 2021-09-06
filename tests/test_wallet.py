@@ -10,8 +10,8 @@ from zksync_sdk import (EthereumProvider, EthereumSignerWeb3, HttpJsonRPCTranspo
                         ZkSyncLibrary, ZkSyncProviderV01, ZkSyncSigner, )
 from zksync_sdk.zksync_provider.batch_builder import BatchBuilder
 from zksync_sdk.network import rinkeby
-from zksync_sdk.types import ChangePubKeyEcdsa, Token, TransactionWithSignature,\
-                             TransactionWithOptionalSignature, RatioType, Transfer
+from zksync_sdk.types import ChangePubKeyEcdsa, Token, TransactionWithSignature, \
+    TransactionWithOptionalSignature, RatioType, Transfer
 from zksync_sdk.zksync_provider.transaction import TransactionStatus
 from zksync_sdk.wallet import DEFAULT_VALID_FROM, DEFAULT_VALID_UNTIL
 
@@ -129,37 +129,56 @@ class TestWallet(IsolatedAsyncioTestCase):
         nonce = await self.wallet.zk_provider.get_account_nonce(self.wallet.address())
         builder = BatchBuilder.from_wallet(self.wallet, nonce)
         for i in range(2):
-            builder.add_transfer(self.receiver_address, "ETH", Decimal(1))
+            builder.add_transfer(self.receiver_address, "ETH", Decimal("0.005"))
         build_result = await builder.build()
         print(f"Total fees: {build_result.total_fees}")
-        trans = await self.wallet.zk_provider.submit_trx_batch_v2(build_result.transactions,
-                                                                  build_result.signature)
-        print(f"result : {trans}")
+        transactions = await self.wallet.zk_provider.submit_trx_batch_v2(build_result.transactions,
+                                                                         build_result.signature)
+        for i, tran in enumerate(transactions):
+            try:
+                status = await tran.await_committed(attempts=100, attempts_timeout=1000)
+                self.assertEqual(status, TransactionStatus.COMMITTED)
+            except Exception as ex:
+                assert False, f"test_build_batch_change_pub_key, transaction {i} " \
+                              f"has failed with error: {ex}"
 
     async def test_build_batch_change_pub_key(self):
         nonce = await self.wallet.zk_provider.get_account_nonce(self.wallet.address())
         builder = BatchBuilder.from_wallet(self.wallet, nonce)
         builder.add_change_pub_key("ETH", eth_auth_type=ChangePubKeyEcdsa())
-        builder.add_transfer(self.receiver_address, "ETH", Decimal(1))
+        builder.add_transfer(self.receiver_address, "USDT", Decimal(1))
         build_result = await builder.build()
         print(f"Total fees: {build_result.total_fees}")
-        res = await self.wallet.zk_provider.submit_trx_batch_v2(build_result.transactions,
-                                                                build_result.signature)
-        print(f"result : {res}")
+        transactions = await self.wallet.zk_provider.submit_trx_batch_v2(build_result.transactions,
+                                                                         build_result.signature)
+        self.assertEqual(len(transactions), 2)
+        for i, tran in enumerate(transactions):
+            try:
+                status = await tran.await_committed(attempts=100, attempts_timeout=1000)
+                self.assertEqual(status, TransactionStatus.COMMITTED)
+            except Exception as ex:
+                assert False, f"test_build_batch_change_pub_key, transaction {i} " \
+                              f"has failed with error: {ex}"
 
     async def test_build_batch_withdraw(self):
         nonce = await self.wallet.zk_provider.get_account_nonce(self.wallet.address())
         builder = BatchBuilder.from_wallet(self.wallet, nonce)
         builder.add_withdraw(self.receiver_address,
                              "ETH",
-                             Decimal(1),
+                             Decimal("0.005"),
                              Decimal("0.1")
                              )
         build_result = await builder.build()
         print(f"Total fees: {build_result.total_fees}")
-        res = await self.wallet.zk_provider.submit_trx_batch_v2(build_result.transactions,
-                                                                build_result.signature)
-        print(f"result : {res}")
+        transactions = await self.wallet.zk_provider.submit_trx_batch_v2(build_result.transactions,
+                                                                         build_result.signature)
+        self.assertEqual(len(transactions), 1)
+
+        try:
+            status = await transactions[0].await_committed(attempts=100, attempts_timeout=1000)
+            self.assertEqual(status, TransactionStatus.COMMITTED)
+        except Exception as ex:
+            assert False, f"test_build_batch_withdraw, transaction has failed with error: {ex}"
 
     async def test_build_batch_mint_nft(self):
         nonce = await self.wallet.zk_provider.get_account_nonce(self.wallet.address())
@@ -170,13 +189,19 @@ class TestWallet(IsolatedAsyncioTestCase):
                              )
         build_result = await builder.build()
         print(f"Total fees: {build_result.total_fees}")
-        res = await self.wallet.zk_provider.submit_trx_batch_v2(build_result.transactions,
-                                                                build_result.signature)
-        print(f"result : {res}")
+        transactions = await self.wallet.zk_provider.submit_trx_batch_v2(build_result.transactions,
+                                                                         build_result.signature)
+        self.assertEqual(len(transactions), 1)
+
+        try:
+            status = await transactions[0].await_committed(attempts=100, attempts_timeout=1000)
+            self.assertEqual(status, TransactionStatus.COMMITTED)
+        except Exception as ex:
+            assert False, f"test_build_batch_mint_nft, transaction has failed with error: {ex}"
 
     async def test_build_batch_withdraw_nft(self):
         account_state = await self.wallet.get_account_state()
-        nfts = account_state.verified.minted_nfts.values()
+        nfts = account_state.verified.nfts.values()
         if not nfts:
             return
         nfts_iterator = iter(nfts)
@@ -190,25 +215,50 @@ class TestWallet(IsolatedAsyncioTestCase):
                                  )
         build_result = await builder.build()
         print(f"Total fees: {build_result.total_fees}")
-        res = await self.wallet.zk_provider.submit_trx_batch_v2(build_result.transactions,
-                                                                build_result.signature)
-        print(f"result : {res}")
+        transactions = await self.wallet.zk_provider.submit_trx_batch_v2(build_result.transactions,
+                                                                         build_result.signature)
+        self.assertEqual(len(transactions), 1)
+        try:
+            status = await transactions[0].await_committed(attempts=100, attempts_timeout=1000)
+            self.assertEqual(status, TransactionStatus.COMMITTED)
+        except Exception as ex:
+            assert False, f"test_build_batch_withdraw_nft, transaction has failed with error: {ex}"
 
     async def test_build_batch_swap(self):
         nonce = await self.wallet.zk_provider.get_account_nonce(self.wallet.address())
+        wallet2_nonce = await self.wallets[0].zk_provider.get_account_nonce(self.wallets[0].address())
         builder = BatchBuilder.from_wallet(self.wallet, nonce)
-
-        for i in range(2):
-            order1 = await self.wallets[0].get_order('USDT', 'ETH', Fraction(500, 1), RatioType.token, Decimal('10.0'))
-            order2 = await self.wallets[1].get_order('ETH', 'USDT', Fraction(1, 600), RatioType.token, Decimal('0.007'))
+        test_n = 2
+        # INFO: there is not obvious restriction to manually set valid nonce for each order
+        for i in range(test_n):
+            order1 = await self.wallet.get_order('USDT',
+                                                 'ETH',
+                                                 Fraction(1500, 1),
+                                                 RatioType.token,
+                                                 Decimal('10.0')
+                                                 ,nonce=nonce
+                                                 )
+            nonce +=1
+            order2 = await self.wallets[0].get_order('ETH',
+                                                     'USDT',
+                                                     Fraction(1, 1200),
+                                                     RatioType.token,
+                                                     Decimal('0.007'),
+                                                     nonce=wallet2_nonce)
+            wallet2_nonce += 1
             builder.add_swap((order1, order2), 'ETH')
         build_result = await builder.build()
         print(f"Total fees: {build_result.total_fees}")
-        res = await self.wallet.zk_provider.submit_trx_batch_v2(build_result.transactions,
-                                                                build_result.signature)
-        self.assertEqual(len(res), 2)
-        self.assertIn('sync-tx', res[0])
-        self.assertIn('sync-tx', res[1])
+        transactions = await self.wallet.zk_provider.submit_trx_batch_v2(build_result.transactions,
+                                                                         build_result.signature)
+        self.assertEqual(len(transactions), test_n)
+        for i, tran in enumerate(transactions):
+            try:
+                status = await tran.await_committed(attempts=100, attempts_timeout=1000)
+                self.assertEqual(status, TransactionStatus.COMMITTED)
+            except Exception as ex:
+                assert False, f"test_build_batch_swap, transaction {i} " \
+                              f"has failed with error: {ex}"
 
     async def test_forced_exit(self):
         result_transaction = await self.wallet.transfer(self.forced_exit_account_address, Decimal("0.1"), "USDC")
@@ -291,13 +341,13 @@ class TestWallet(IsolatedAsyncioTestCase):
               PS: previous version of the tests was passing due to no one does not test the trasaction result
                   it failed
         """
-        account_state = await self.wallet.zk_provider.get_state(self.nft_transfer_account_address)
+        account_state = await self.wallet.zk_provider.get_state(self.wallet.address())
         nfts = account_state.verified.nfts.values()
         if not nfts:
             return
         nfts_iter = iter(nfts)
         first_value = next(nfts_iter)
-        tr = await self.wallet.withdraw_nft(self.wallet.address(), first_value, "USDC")
+        tr = await self.wallet.withdraw_nft(self.nft_transfer_account_address, first_value, "USDC")
         try:
             status = await tr.await_committed(attempts=1000, attempts_timeout=1000)
             self.assertEqual(status, TransactionStatus.COMMITTED)

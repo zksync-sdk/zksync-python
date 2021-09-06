@@ -674,7 +674,7 @@ class TransactionWithSignature:
 @dataclass()
 class TransactionWithOptionalSignature:
     tx: EncodedTx
-    signature: Union[None, TxEthSignature, List[TxSignature]]
+    signature: Union[None, TxEthSignature, List[TxSignature]] = None
 
     def dict(self):
         if self.signature is None:
