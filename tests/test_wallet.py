@@ -94,8 +94,13 @@ class TestWallet(IsolatedAsyncioTestCase):
         # status = await trans.await_committed()
         # self.assertEqual(status, TransactionStatus.COMMITTED)
 
-        order1 = await self.wallet.get_order('USDT', 'ETH', Fraction(1500, 1), RatioType.token, Decimal('10.0'))
-        order2 = await self.wallets[0].get_order('ETH', 'USDT', Fraction(1, 1200), RatioType.token, Decimal('0.007'))
+        balance1 = await self.wallet.get_account_state()
+        print(f"balance1 : {balance1.verified}")
+        balance2 = await self.wallets[0].get_account_state()
+        print(f"balance2: {balance2.verified}")
+
+        order1 = await self.wallet.get_order('USDT', 'ETH', Fraction(1500, 1), RatioType.token, Decimal('1.0'))
+        order2 = await self.wallets[0].get_order('ETH', 'USDT', Fraction(1, 1200), RatioType.token, Decimal('0.0007'))
         tr = await self.wallet.swap((order1, order2), 'ETH')
         try:
             status = await tr.await_committed(attempts=100)
@@ -224,27 +229,33 @@ class TestWallet(IsolatedAsyncioTestCase):
             assert False, f"test_build_batch_withdraw_nft, transaction has failed with error: {ex}"
 
     async def test_build_batch_swap(self):
+        # amount = 0.01
+        # eth_token_name = "ETH"
+        # eth_token = await self.wallets[0].resolve_token(eth_token_name)
+        # await self.wallets[0].ethereum_provider.approve_deposit(eth_token, Decimal(amount))
+        # await self.wallets[0].ethereum_provider.deposit(eth_token, Decimal(amount), self.wallets[0].address())
+        # trans = await self.wallets[0].set_signing_key(eth_token_name, eth_auth_data=ChangePubKeyEcdsa())
+        # status = await trans.await_committed()
+        # self.assertEqual(status, TransactionStatus.COMMITTED)
+
         nonce = await self.wallet.zk_provider.get_account_nonce(self.wallet.address())
-        wallet2_nonce = await self.wallets[0].zk_provider.get_account_nonce(self.wallets[0].address())
+        nonce0 = await self.wallets[0].zk_provider.get_account_nonce(self.wallets[0].address())
         builder = BatchBuilder.from_wallet(self.wallet, nonce)
         test_n = 2
-        # INFO: there is not obvious restriction to manually set valid nonce for each order
         for i in range(test_n):
             order1 = await self.wallet.get_order('USDT',
                                                  'ETH',
                                                  Fraction(1500, 1),
                                                  RatioType.token,
-                                                 Decimal('10.0')
-                                                 ,nonce=nonce
+                                                 Decimal('0.1')
+                                                 , nonce=nonce + i
                                                  )
-            nonce +=1
             order2 = await self.wallets[0].get_order('ETH',
                                                      'USDT',
                                                      Fraction(1, 1200),
                                                      RatioType.token,
-                                                     Decimal('0.007'),
-                                                     nonce=wallet2_nonce)
-            wallet2_nonce += 1
+                                                     Decimal('0.00007'),
+                                                     nonce=nonce0 + i)
             builder.add_swap((order1, order2), 'ETH')
         build_result = await builder.build()
         print(f"Total fees: {build_result.total_fees}")
