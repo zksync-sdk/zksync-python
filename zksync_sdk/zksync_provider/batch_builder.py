@@ -259,7 +259,7 @@ class BatchBuilder:
             fee = obj["fee"]
             if fee is None:
                 fee = await self.wallet.zk_provider.get_transaction_fee(FeeTxType.withdraw,
-                                                                        obj["to_address"],
+                                                                        obj["eth_address"],
                                                                         token.id)
                 fee = fee.total_fee
             else:

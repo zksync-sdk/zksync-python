@@ -164,9 +164,8 @@ class TestWallet(IsolatedAsyncioTestCase):
         nonce = await self.wallet.zk_provider.get_account_nonce(self.wallet.address())
         builder = BatchBuilder.from_wallet(self.wallet, nonce)
         builder.add_withdraw(self.receiver_address,
-                             "ETH",
-                             Decimal("0.005"),
-                             Decimal("0.1")
+                             "USDT",
+                             Decimal("0.000001")
                              )
         build_result = await builder.build()
         print(f"Total fees: {build_result.total_fees}")
