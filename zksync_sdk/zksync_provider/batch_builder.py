@@ -19,7 +19,6 @@ class BatchResult:
 
 
 class BatchBuilder:
-
     IS_ENCODED_TRANSACTION = "is_encoded_trx"
     ENCODED_TRANSACTION_TYPE = "internal_type"
 
@@ -204,11 +203,10 @@ class BatchBuilder:
                     fee = await self.wallet.zk_provider.get_transaction_fee(FeeTxType.change_pub_key_ecdsa,
                                                                             self.wallet.address(),
                                                                             token.id)
-                # elif eth_auth_type == ChangePubKeyTypes.onchain:
-                #     fee = await self.wallet.zk_provider.get_transaction_fee(
-                #         FeeTxType.change_pub_key_onchain,
-                #         self.wallet.address(),
-                #         token.id)
+                elif eth_auth_type == ChangePubKeyTypes.onchain:
+                    fee = await self.wallet.zk_provider.get_transaction_fee(FeeTxType.change_pub_key_onchain,
+                                                                            self.wallet.address(),
+                                                                            token.id)
                 elif eth_auth_type == ChangePubKeyTypes.create2:
                     fee = await self.wallet.zk_provider.get_transaction_fee(
                         FeeTxType.change_pub_key_create2,
@@ -217,7 +215,7 @@ class BatchBuilder:
                 fee = fee.total_fee
             else:
                 fee = token.from_decimal(fee)
-
+            print(f"new pub key: {obj['new_pk_hash']}")
             change_pub_key = ChangePubKey(
                 account=obj["account"],
                 account_id=account_id,
