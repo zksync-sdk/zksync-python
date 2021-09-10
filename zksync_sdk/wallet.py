@@ -103,7 +103,7 @@ class Wallet:
             fee_token: Token,
             eth_auth_data: Union[ChangePubKeyCREATE2, ChangePubKeyEcdsa, None],
             fee: int,
-            nonce: int = None,
+            nonce: Optional[int] = None,
             valid_from=DEFAULT_VALID_FROM,
             valid_until=DEFAULT_VALID_UNTIL):
         if nonce is None:
@@ -132,7 +132,7 @@ class Wallet:
 
         return change_pub_key, eth_signature
 
-    async def forced_exit(self, target: str, token: TokenLike, fee: Decimal = None,
+    async def forced_exit(self, target: str, token: TokenLike, fee: Optional[Decimal] = None,
                           valid_from=DEFAULT_VALID_FROM, valid_until=DEFAULT_VALID_UNTIL) -> Transaction:
         nonce = await self.zk_provider.get_account_nonce(self.address())
         token_obj = await self.resolve_token(token)
@@ -142,7 +142,7 @@ class Wallet:
         else:
             fee_int = token_obj.from_decimal(fee)
 
-        transfer, eth_signature = await self.build_forced_exit(target, token, fee_int, nonce,
+        transfer, eth_signature = await self.build_forced_exit(target, token_obj, fee_int, nonce,
                                                                valid_from, valid_until)
 
         return await self.send_signed_transaction(transfer, eth_signature)
@@ -154,7 +154,7 @@ class Wallet:
             target: str,
             token: Token,
             fee: int,
-            nonce: int = None,
+            nonce: Optional[int] = None,
             valid_from=DEFAULT_VALID_FROM,
             valid_until=DEFAULT_VALID_UNTIL) -> Tuple[ForcedExit, TxEthSignature]:
         if nonce is None:
@@ -174,7 +174,7 @@ class Wallet:
 
         return forced_exit, eth_signature
 
-    async def mint_nft(self, content_hash: str, recipient: str,token: TokenLike, fee: Decimal = None) -> Transaction:
+    async def mint_nft(self, content_hash: str, recipient: str,token: TokenLike, fee: Optional[Decimal] = None) -> Transaction:
         token_obj = await self.resolve_token(token)
 
         nonce = await self.zk_provider.get_account_nonce(self.address())
@@ -300,7 +300,7 @@ class Wallet:
         return transfer, eth_signature
 
     async def transfer(self, to: str, amount: Decimal, token: TokenLike,
-                       fee: Decimal = None,
+                       fee: Optional[Decimal] = None,
                        valid_from=DEFAULT_VALID_FROM, valid_until=DEFAULT_VALID_UNTIL) -> Transaction:
         nonce = await self.zk_provider.get_account_nonce(self.address())
         token_obj = await self.resolve_token(token)
