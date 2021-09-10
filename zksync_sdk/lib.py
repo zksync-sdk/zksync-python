@@ -34,10 +34,12 @@ class ZksSignature(Structure):
         ("data", c_ubyte * PACKED_SIGNATURE_LEN),
     ]
 
+
 class ZksOrdersHash(Structure):
     _fields_ = [
         ("data", c_ubyte * ORDERS_HASH_LEN),
     ]
+
 
 class ZksOrders(Structure):
     _fields_ = [

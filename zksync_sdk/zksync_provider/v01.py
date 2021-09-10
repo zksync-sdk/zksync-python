@@ -10,19 +10,21 @@ from zksync_sdk.types import (AccountState, ContractAddress, EncodedTx, EthOpInf
 from zksync_sdk.zksync_provider.error import AccountDoesNotExist
 from zksync_sdk.zksync_provider.interface import ZkSyncProviderInterface
 from zksync_sdk.zksync_provider.types import FeeTxType
+from zksync_sdk.zksync_provider.transaction import Transaction
 
 __all__ = ['ZkSyncProviderV01']
 
 
 class ZkSyncProviderV01(ZkSyncProviderInterface):
     async def submit_tx(self, tx: EncodedTx, signature: Union[Optional[TxEthSignature], List[Optional[TxEthSignature]]],
-                        fast_processing: bool = False) -> str:
+                        fast_processing: bool = False) -> Transaction:
         if isinstance(signature, List):
             signature = [s.dict() if s is not None else None for s in signature]
         else:
             signature = signature.dict() if signature is not None else None
-        return await self.provider.request("tx_submit",
-                                           [tx.dict(), signature, fast_processing])
+        trans_id = await self.provider.request("tx_submit",
+                                               [tx.dict(), signature, fast_processing])
+        return Transaction.build_transaction(self, trans_id)
 
     async def get_tokens(self) -> Tokens:
         data = await self.provider.request("tokens", None)
@@ -36,14 +38,15 @@ class ZkSyncProviderV01(ZkSyncProviderInterface):
     async def submit_txs_batch(self, transactions: List[TransactionWithSignature],
                                signatures: Optional[
                                    Union[List[TxEthSignature], TxEthSignature]
-                               ] = None) -> List[str]:
+                               ] = None) -> List[Transaction]:
         if signatures is None:
             signatures = []
         elif isinstance(signatures, TxEthSignature):
             signatures = [signatures]
         transactions = [tr.dict() for tr in transactions]
         signatures = [sig.dict() for sig in signatures]
-        return await self.provider.request("submit_txs_batch", [transactions, signatures])
+        trans_ids: List[str] = await self.provider.request("submit_txs_batch", [transactions, signatures])
+        return [Transaction.build_transaction(self, trans_id) for trans_id in trans_ids]
 
     async def get_contract_address(self) -> ContractAddress:
         data = await self.provider.request("contract_address", None)
