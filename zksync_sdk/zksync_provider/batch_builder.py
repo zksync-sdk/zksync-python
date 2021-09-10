@@ -215,7 +215,6 @@ class BatchBuilder:
                 fee = fee.total_fee
             else:
                 fee = token.from_decimal(fee)
-            print(f"new pub key: {obj['new_pk_hash']}")
             change_pub_key = ChangePubKey(
                 account=obj["account"],
                 account_id=account_id,
