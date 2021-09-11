@@ -64,7 +64,7 @@ class TestWallet(IsolatedAsyncioTestCase):
     async def test_change_pubkey(self):
         trans = await self.wallet.set_signing_key("ETH", eth_auth_data=ChangePubKeyEcdsa())
         try:
-            status = await trans.await_committed()
+            status = await trans.await_committed(attempts=1000, attempts_timeout=1000)
             self.assertEqual(status, TransactionStatus.COMMITTED)
         except Exception as ex:
             assert False, str(ex)
