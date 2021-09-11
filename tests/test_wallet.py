@@ -194,7 +194,7 @@ class TestWallet(IsolatedAsyncioTestCase):
         self.assertEqual(len(transactions), 1)
 
         try:
-            status = await transactions[0].await_committed(attempts=100, attempts_timeout=1000)
+            status = await transactions[0].await_committed(attempts=1000, attempts_timeout=1000)
             self.assertEqual(status, TransactionStatus.COMMITTED)
         except Exception as ex:
             assert False, f"test_build_batch_mint_nft, transaction has failed with error: {ex}"
@@ -219,7 +219,7 @@ class TestWallet(IsolatedAsyncioTestCase):
                                                                          build_result.signature)
         self.assertEqual(len(transactions), 1)
         try:
-            status = await transactions[0].await_committed(attempts=100, attempts_timeout=1000)
+            status = await transactions[0].await_committed(attempts=1000, attempts_timeout=1000)
             self.assertEqual(status, TransactionStatus.COMMITTED)
         except Exception as ex:
             assert False, f"test_build_batch_withdraw_nft, transaction has failed with error: {ex}"
@@ -251,7 +251,7 @@ class TestWallet(IsolatedAsyncioTestCase):
         self.assertEqual(len(transactions), test_n)
         for i, tran in enumerate(transactions):
             try:
-                status = await tran.await_committed(attempts=100, attempts_timeout=1000)
+                status = await tran.await_committed(attempts=1000, attempts_timeout=1000)
                 self.assertEqual(status, TransactionStatus.COMMITTED)
             except Exception as ex:
                 assert False, f"test_build_batch_swap, transaction {i} " \

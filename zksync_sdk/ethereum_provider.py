@@ -37,5 +37,4 @@ class EthereumProvider:
 
     async def is_onchain_auth_pubkey_hash_set(self, nonce: int) -> bool:
         auth_facts = self.zksync.auth_facts(self.zksync.account.address, nonce)
-        print(f"is_onchain_auth_pubkey_hash_set value: {auth_facts}")
         return auth_facts != DEFAULT_AUTH_FACTS
