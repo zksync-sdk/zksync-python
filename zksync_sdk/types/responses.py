@@ -58,6 +58,7 @@ class AccountState(BaseModel):
         alias_generator = to_camel
 
     def get_nonce(self) -> int:
+        assert self.committed is not None, "`get_nonce` needs `committed` to be set"
         return self.committed.nonce
 
 

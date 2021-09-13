@@ -1,5 +1,5 @@
 from http.client import OK
-from typing import List
+from typing import List, Optional
 
 import httpx
 
@@ -11,7 +11,7 @@ class HttpJsonRPCTransport(JsonRPCTransport):
     def __init__(self, network: Network):
         self.network = network
 
-    async def request(self, method: str, params: List):
+    async def request(self, method: str, params: Optional[List]):
         async with httpx.AsyncClient() as client:
             response = await client.post(self.network.zksync_url,
                                          json=self.create_request(method, params))

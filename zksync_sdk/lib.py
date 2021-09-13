@@ -1,6 +1,7 @@
 import ctypes
 from ctypes import (Structure, c_ubyte, cdll)
 import os
+from typing import Optional
 
 PRIVATE_KEY_LEN = 32
 PUBLIC_KEY_LEN = 32
@@ -48,9 +49,9 @@ class ZksOrders(Structure):
 
 class ZkSyncLibrary:
 
-    def __init__(self, library_path: str = None):
+    def __init__(self, library_path: Optional[str] = None):
         if library_path is None:
-            library_path = os.getenv("ZK_SYNC_LIBRARY_PATH")
+            library_path = os.environ["ZK_SYNC_LIBRARY_PATH"]
         self.lib = cdll.LoadLibrary(library_path)
 
     def private_key_from_seed(self, seed: bytes):
@@ -68,17 +69,17 @@ class ZkSyncLibrary:
     def get_pubkey_hash(self, public_key: bytes):
         assert len(public_key) == PUBLIC_KEY_LEN
         public_key_hash = ctypes.pointer(ZksPubkeyHash())
-        public_key = ctypes.pointer(
+        public_key_ptr = ctypes.pointer(
             ZksPackedPublicKey(data=(c_ubyte * PUBLIC_KEY_LEN)(*public_key)))
-        self.lib.zks_crypto_public_key_to_pubkey_hash(public_key, public_key_hash)
+        self.lib.zks_crypto_public_key_to_pubkey_hash(public_key_ptr, public_key_hash)
         return bytes(public_key_hash.contents.data)
 
     def sign(self, private_key: bytes, message: bytes):
         assert len(private_key) == PRIVATE_KEY_LEN
         signature = ctypes.pointer(ZksSignature())
-        private_key = ctypes.pointer(
+        private_key_ptr = ctypes.pointer(
             ZksPrivateKey(data=(c_ubyte * PRIVATE_KEY_LEN)(*private_key)))
-        self.lib.zks_crypto_sign_musig(private_key, message, len(message), signature)
+        self.lib.zks_crypto_sign_musig(private_key_ptr, message, len(message), signature)
         return bytes(signature.contents.data)
 
     def hash_orders(self, orders: bytes):

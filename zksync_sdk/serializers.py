@@ -203,6 +203,8 @@ def remove_address_prefix(address: str) -> str:
     if address.startswith('sync:'):
         return address[5:]
 
+    return address
+
 
 def serialize_address(address: str) -> bytes:
     address = remove_address_prefix(address)

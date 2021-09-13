@@ -77,7 +77,7 @@ class ZkSyncProviderV01(ZkSyncProviderInterface):
 
     # Please note that the batch fee returns the fee of the transaction in int and not in Fee
     # This is a server-side feature
-    async def get_transactions_batch_fee(self, tx_types: List[FeeTxType], addresses: List[Address],
+    async def get_transactions_batch_fee(self, tx_types: List[FeeTxType], addresses: List[str],
                                          token_like) -> int:
 
         data = await self.provider.request('get_txs_batch_fee_in_wei',
