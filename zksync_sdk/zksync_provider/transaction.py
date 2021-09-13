@@ -1,3 +1,4 @@
+import asyncio
 from enum import Enum, auto
 import time
 
@@ -34,7 +35,7 @@ class Transaction:
                 block = transaction_details["block"]
                 if block is not None and "committed" in block and block["committed"]:
                     return TransactionStatus.COMMITTED
-            time.sleep(attempts_timeout / 1000)
+            await asyncio.sleep(attempts_timeout / 1000)
 
     async def await_verified(self, attempts: int = 10, attempts_timeout: int = 100):
         intermediate_status = TransactionStatus.FAILED
@@ -59,4 +60,4 @@ class Transaction:
                         "verified" in block and\
                         block["verified"]:
                     return TransactionStatus.VERIFIED
-            time.sleep(attempts_timeout / 1000)
+            await asyncio.sleep(attempts_timeout / 1000)
