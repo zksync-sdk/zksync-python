@@ -463,6 +463,9 @@ class Order(EncodedTx):
             serialize_timestamp(self.valid_until)
         ])
 
+    def batch_message_part(self) -> str:
+        pass
+
     def human_readable_message(self) -> str:
         if self.amount == 0:
             header = f'Limit order for {self.token_sell.symbol} -> {self.token_buy.symbol}'
@@ -490,7 +493,7 @@ class Order(EncodedTx):
             "validFrom": self.valid_from,
             "validUntil": self.valid_until,
             "signature": self.signature.dict() if self.signature else None,
-            "ethSignature": self.ethSignature.dict() if self.ethSignature else None,
+            "ethSignature": self.eth_signature.dict() if self.eth_signature else None,
         }
 
 
