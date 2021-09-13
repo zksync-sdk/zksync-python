@@ -7,7 +7,7 @@ from zksync_sdk.types import (ChangePubKey, ChangePubKeyCREATE2, ChangePubKeyEcd
                               TransactionWithOptionalSignature,
                               Transfer, TxEthSignature,
                               Withdraw, MintNFT, WithdrawNFT, NFT, EncodedTxType, Order, Swap)
-from typing import List, Union, Tuple
+from typing import List, Union, Tuple, Optional
 from decimal import Decimal
 
 
@@ -26,11 +26,11 @@ class BatchBuilder:
     SIGNATURE_ENTRY = "signature"
 
     @classmethod
-    def from_wallet(cls, wallet: Wallet, nonce: int, txs: List[EncodedTx] = None):
+    def from_wallet(cls, wallet: Wallet, nonce: int, txs: Optional[List[EncodedTx]] = None):
         obj = BatchBuilder(wallet, nonce, txs)
         return obj
 
-    def __init__(self, wallet: Wallet, nonce: int, txs: List[EncodedTx] = None):
+    def __init__(self, wallet: Wallet, nonce: int, txs: Optional[List[EncodedTx]] = None):
         if txs is None:
             txs = []
         self.wallet = wallet
@@ -55,7 +55,7 @@ class BatchBuilder:
                      eth_address: str,
                      token: TokenLike,
                      amount: Decimal,
-                     fee: Decimal = None,
+                     fee: Optional[Decimal] = None,
                      valid_from=DEFAULT_VALID_FROM,
                      valid_until=DEFAULT_VALID_UNTIL
                      ):
@@ -75,7 +75,7 @@ class BatchBuilder:
                      content_hash: str,
                      recipient: str,
                      fee_token: TokenLike,
-                     fee: Decimal = None
+                     fee: Optional[Decimal] = None
                      ):
         mint_nft = {
             self.ENCODED_TRANSACTION_TYPE: EncodedTxType.MINT_NFT,
@@ -91,7 +91,7 @@ class BatchBuilder:
                          to_address: str,
                          nft_token: NFT,
                          fee_token: TokenLike,
-                         fee: Decimal = None,
+                         fee: Optional[Decimal] = None,
                          valid_from=DEFAULT_VALID_FROM,
                          valid_until=DEFAULT_VALID_UNTIL
                          ):
@@ -110,8 +110,8 @@ class BatchBuilder:
     def add_swap(self,
                  orders: Tuple[Order, Order],
                  fee_token: TokenLike,
-                 amounts: Tuple[Decimal, Decimal] = None,
-                 fee: Decimal = None
+                 amounts: Optional[Tuple[Decimal, Decimal]] = None,
+                 fee: Optional[Decimal] = None
                  ):
         if amounts is None:
             if orders[0].amount == 0 or orders[1].amount == 0:
@@ -130,7 +130,7 @@ class BatchBuilder:
                      address_to: str,
                      token: TokenLike,
                      amount: Decimal,
-                     fee: Decimal = None,
+                     fee: Optional[Decimal] = None,
                      valid_from=DEFAULT_VALID_FROM,
                      valid_until=DEFAULT_VALID_UNTIL
                      ):
@@ -150,7 +150,7 @@ class BatchBuilder:
     def add_change_pub_key(self,
                            fee_token: TokenLike,
                            eth_auth_type: Union[ChangePubKeyCREATE2, ChangePubKeyEcdsa, None],
-                           fee: Decimal = None,
+                           fee: Optional[Decimal] = None,
                            valid_from=DEFAULT_VALID_FROM,
                            valid_until=DEFAULT_VALID_UNTIL
                            ):
@@ -171,7 +171,7 @@ class BatchBuilder:
     def add_force_exit(self,
                        target_address: str,
                        token: TokenLike,
-                       fee: Decimal = None,
+                       fee: Optional[Decimal] = None,
                        valid_from=DEFAULT_VALID_FROM,
                        valid_until=DEFAULT_VALID_UNTIL
                        ):
