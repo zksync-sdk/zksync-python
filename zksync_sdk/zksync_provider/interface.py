@@ -69,7 +69,7 @@ class ZkSyncProviderInterface(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    async def get_transactions_batch_fee(self, tx_types: List[FeeTxType], addresses: List[Address],
+    async def get_transactions_batch_fee(self, tx_types: List[FeeTxType], addresses: List[str],
                                          token_like) -> int:
         raise NotImplementedError
 

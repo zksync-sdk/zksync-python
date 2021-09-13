@@ -137,7 +137,7 @@ class Tokens(BaseModel):
         else:
             return None
 
-    def find(self, token: TokenLike) -> Token:
+    def find(self, token: TokenLike) -> Optional[Token]:
         result = None
         if isinstance(token, int):
             result = self.find_by_id(token)
@@ -181,9 +181,9 @@ class ChangePubKey(EncodedTx):
     nonce: int
     valid_from: int
     valid_until: int
-    eth_auth_data: Union[ChangePubKeyCREATE2, ChangePubKeyEcdsa] = None
-    eth_signature: TxEthSignature = None
-    signature: TxSignature = None
+    eth_auth_data: Union[ChangePubKeyCREATE2, ChangePubKeyEcdsa, None] = None
+    eth_signature: Optional[TxEthSignature] = None
+    signature: Optional[TxSignature] = None
 
     def human_readable_message(self) -> str:
         message = f"Set signing key: {self.new_pk_hash.replace('sync:', '').lower()}"
@@ -260,7 +260,7 @@ class Transfer(EncodedTx):
     nonce: int
     valid_from: int
     valid_until: int
-    signature: TxSignature = None
+    signature: Optional[TxSignature] = None
 
     def tx_type(self) -> int:
         return EncodedTxType.TRANSFER
@@ -325,7 +325,7 @@ class Withdraw(EncodedTx):
     valid_from: int
     valid_until: int
     token: Token
-    signature: TxSignature = None
+    signature: Optional[TxSignature] = None
 
     def tx_type(self) -> int:
         return EncodedTxType.WITHDRAW
@@ -386,7 +386,7 @@ class ForcedExit(EncodedTx):
     nonce: int
     valid_from: int
     valid_until: int
-    signature: TxSignature = None
+    signature: Optional[TxSignature] = None
 
     def tx_type(self) -> int:
         return EncodedTxType.FORCED_EXIT
@@ -428,7 +428,7 @@ class ForcedExit(EncodedTx):
 
 
 @dataclass
-class Order:
+class Order(EncodedTx):
     account_id: int
     recipient: str
     nonce: int
@@ -438,8 +438,11 @@ class Order:
     ratio: Fraction
     valid_from: int
     valid_until: int
-    signature: TxSignature = None
-    ethSignature: TxEthSignature = None
+    signature: Optional[TxSignature] = None
+    eth_signature: Optional[TxEthSignature] = None
+
+    def tx_type(self) -> int:
+        raise NotImplementedError
 
     def msg_type(self) -> int:
         return b'o'[0]
@@ -500,7 +503,7 @@ class Swap(EncodedTx):
     fee_token: Token
     fee: int
     nonce: int
-    signature: TxSignature = None
+    signature: Optional[TxSignature] = None
 
     def tx_type(self) -> int:
         return EncodedTxType.SWAP
@@ -561,7 +564,7 @@ class MintNFT(EncodedTx):
     fee: int
     fee_token: Token
     nonce: int
-    signature: TxSignature = None
+    signature: Optional[TxSignature] = None
 
     def tx_type(self) -> int:
         return EncodedTxType.MINT_NFT
@@ -614,7 +617,7 @@ class WithdrawNFT(EncodedTx):
     valid_from: int
     valid_until: int
     token_id: int
-    signature: TxSignature = None
+    signature: Optional[TxSignature] = None
 
     def tx_type(self) -> int:
         return EncodedTxType.WITHDRAW_NFT

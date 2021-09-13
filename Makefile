@@ -1,15 +1,12 @@
 SHELL := /bin/bash
 
-.PHONY: test test37 test38 test39 mypy coverage
+.PHONY: test test38 test39 mypy coverage
 
 TOX := docker-compose run --rm app tox
 
 test:
 	$(TOX)
 
-
-test37:
-	$(TOX) -e py37
 
 test38:
 	$(TOX) -e py38
