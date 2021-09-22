@@ -85,16 +85,6 @@ class TestWallet(IsolatedAsyncioTestCase):
             assert False, str(ex)
 
     async def test_swap(self):
-        # amount = 2
-        # eth_token_name = "ETH"
-        # eth_token = await self.wallets[0].resolve_token(eth_token_name)
-        # await self.wallets[0].ethereum_provider.approve_deposit(eth_token, Decimal(amount))
-        # await self.wallets[0].ethereum_provider.deposit(eth_token, Decimal(amount), self.wallets[0].address())
-        # trans = await self.wallets[0].set_signing_key(eth_token_name, eth_auth_data=ChangePubKeyEcdsa())
-        #
-        # status = await trans.await_committed()
-        # self.assertEqual(status, TransactionStatus.COMMITTED)
-
         order1 = await self.wallet.get_order('USDT', 'ETH', Fraction(1500, 1), RatioType.token, Decimal('1.0'))
         order2 = await self.wallets[0].get_order('ETH', 'USDT', Fraction(1, 1200), RatioType.token, Decimal('0.0007'))
         tr = await self.wallet.swap((order1, order2), 'ETH')
@@ -133,8 +123,8 @@ class TestWallet(IsolatedAsyncioTestCase):
             builder.add_transfer(self.receiver_address, "ETH", Decimal("0.00005"))
         build_result = await builder.build()
         print(f"Total fees: {build_result.total_fees}")
-        transactions = await self.wallet.zk_provider.submit_trx_batch_v2(build_result.transactions,
-                                                                         build_result.signature)
+        transactions = await self.wallet.zk_provider.submit_batch_builder_trx_batch(build_result.transactions,
+                                                                                    build_result.signature)
         for i, tran in enumerate(transactions):
             try:
                 status = await tran.await_committed(attempts=1000, attempts_timeout=1000)
@@ -150,8 +140,8 @@ class TestWallet(IsolatedAsyncioTestCase):
         builder.add_transfer(self.receiver_address, "USDT", Decimal("0.001"))
         build_result = await builder.build()
         print(f"Total fees: {build_result.total_fees}")
-        transactions = await self.wallet.zk_provider.submit_trx_batch_v2(build_result.transactions,
-                                                                         build_result.signature)
+        transactions = await self.wallet.zk_provider.submit_batch_builder_trx_batch(build_result.transactions,
+                                                                                    build_result.signature)
         self.assertEqual(len(transactions), 2)
         for i, tran in enumerate(transactions):
             try:
@@ -170,8 +160,8 @@ class TestWallet(IsolatedAsyncioTestCase):
                              )
         build_result = await builder.build()
         print(f"Total fees: {build_result.total_fees}")
-        transactions = await self.wallet.zk_provider.submit_trx_batch_v2(build_result.transactions,
-                                                                         build_result.signature)
+        transactions = await self.wallet.zk_provider.submit_batch_builder_trx_batch(build_result.transactions,
+                                                                                    build_result.signature)
         self.assertEqual(len(transactions), 1)
 
         try:
@@ -189,8 +179,8 @@ class TestWallet(IsolatedAsyncioTestCase):
                              )
         build_result = await builder.build()
         print(f"Total fees: {build_result.total_fees}")
-        transactions = await self.wallet.zk_provider.submit_trx_batch_v2(build_result.transactions,
-                                                                         build_result.signature)
+        transactions = await self.wallet.zk_provider.submit_batch_builder_trx_batch(build_result.transactions,
+                                                                                    build_result.signature)
         self.assertEqual(len(transactions), 1)
 
         try:
@@ -215,8 +205,8 @@ class TestWallet(IsolatedAsyncioTestCase):
                                  )
         build_result = await builder.build()
         print(f"Total fees: {build_result.total_fees}")
-        transactions = await self.wallet.zk_provider.submit_trx_batch_v2(build_result.transactions,
-                                                                         build_result.signature)
+        transactions = await self.wallet.zk_provider.submit_batch_builder_trx_batch(build_result.transactions,
+                                                                                    build_result.signature)
         self.assertEqual(len(transactions), 1)
         try:
             status = await transactions[0].await_committed(attempts=1000, attempts_timeout=1000)
@@ -246,8 +236,8 @@ class TestWallet(IsolatedAsyncioTestCase):
             builder.add_swap((order1, order2), 'ETH')
         build_result = await builder.build()
         print(f"Total fees: {build_result.total_fees}")
-        transactions = await self.wallet.zk_provider.submit_trx_batch_v2(build_result.transactions,
-                                                                         build_result.signature)
+        transactions = await self.wallet.zk_provider.submit_batch_builder_trx_batch(build_result.transactions,
+                                                                                    build_result.signature)
         self.assertEqual(len(transactions), test_n)
         for i, tran in enumerate(transactions):
             try:
@@ -261,10 +251,6 @@ class TestWallet(IsolatedAsyncioTestCase):
         result_transaction = await self.wallet.transfer(self.forced_exit_account_address, Decimal("0.1"), "USDC")
         status = await result_transaction.await_committed()
         self.assertEqual(status, TransactionStatus.COMMITTED)
-
-        # INFO: in the case of new account there must be passed 1 hour otherwise it sends:
-        # zksync_sdk.transport.ResponseError: Response error with code -32602
-        #                                     Target account exists less than required minimum amount (1 hours)
         tr = await self.wallet.forced_exit(self.forced_exit_account_address, "USDC")
         try:
             status = await tr.await_verified(attempts_timeout=1000)
@@ -294,12 +280,6 @@ class TestWallet(IsolatedAsyncioTestCase):
               PS: previous version of the tests was passing due to no one does not test the trasaction result
                   it failed
         """
-        # tr = await self.wallet.mint_nft("0x0000000000000000000000000000000000000000000000000000000000000123",
-        #                                 self.receiver_address,
-        #                                 "USDC")
-        # status = await tr.await_verified(attempts=10000, attempts_timeout=1000)
-        # self.assertEqual(status, TransactionStatus.VERIFIED)
-
         account_state = await self.wallet.zk_provider.get_state(self.nft_transfer_account_address)
         nfts = account_state.verified.nfts.items()
         first_value = None
@@ -312,7 +292,6 @@ class TestWallet(IsolatedAsyncioTestCase):
 
         txs = await self.wallet.transfer_nft(
             self.wallet.address(),
-            # self.receiver_address,
             first_value,
             "USDC",
             Decimal(0.01)
@@ -351,20 +330,6 @@ class TestWallet(IsolatedAsyncioTestCase):
         except Exception as ex:
             assert False, f"test_withdraw_nft, transaction has failed with error: {ex}"
 
-        # account_state = await self.wallet.get_account_state()
-        # nfts = account_state.verified.nfts.values()
-        # if not nfts:
-        #     return
-        # nfts_iter = iter(nfts)
-        # first_value = next(nfts_iter)
-        # tr = await self.wallet.withdraw_nft(self.wallet.address(),
-        #                                     first_value, "USDT")
-        # try:
-        #     status = await tr.await_committed(attempts=1000, attempts_timeout=1000)
-        #     self.assertEqual(status, TransactionStatus.COMMITTED)
-        # except Exception as ex:
-        #     assert False, f"test_withdraw_nft, transaction has failed with error: {ex}"
-
     async def test_withdraw(self):
         tr = await self.wallet.withdraw(self.receiver_address,
                                         Decimal("0.000001"), "USDT")
@@ -398,8 +363,6 @@ class TestEthereumProvider(IsolatedAsyncioTestCase):
         self.ethereum_provider = EthereumProvider(w3, self.zksync)
 
     async def test_approve_deposit(self):
-        # INFO: requests.exceptions.HTTPError: 429 Client Error:
-        #        Too Many Requests for url: https://rinkeby.infura.io/v3/bcf42e619a704151a1b0d95a35cb2e62
         token = Token(
             address=Web3.toChecksumAddress('0xeb8f08a975ab53e34d8a0330e0d34de942c95926'),
             id=20, symbol='USDC',
