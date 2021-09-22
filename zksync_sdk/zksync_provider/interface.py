@@ -7,6 +7,7 @@ from eth_typing import Address
 from zksync_sdk.transport import JsonRPCTransport
 from zksync_sdk.types import (AccountState, ContractAddress, EncodedTx, EthOpInfo, Fee, Token,
                               TokenLike, Tokens, TransactionDetails, TransactionWithSignature,
+                              TransactionWithOptionalSignature,
                               TxEthSignature, )
 from zksync_sdk.zksync_provider.types import FeeTxType
 from zksync_sdk.zksync_provider.transaction import Transaction
@@ -32,6 +33,11 @@ class ZkSyncProviderInterface(ABC):
                                signatures: Optional[
                                    Union[List[TxEthSignature], TxEthSignature]
                                ] = None) -> List[Transaction]:
+        raise NotImplementedError
+
+    @abstractmethod
+    async def submit_batch_builder_txs_batch(self, transactions: List[TransactionWithOptionalSignature],
+                                             signature: TxEthSignature) -> List[Transaction]:
         raise NotImplementedError
 
     @abstractmethod
