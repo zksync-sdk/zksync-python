@@ -49,7 +49,7 @@ class ZkSyncProviderV01(ZkSyncProviderInterface):
         trans_ids: List[str] = await self.provider.request("submit_txs_batch", [transactions, signatures])
         return [Transaction.build_transaction(self, trans_id) for trans_id in trans_ids]
 
-    async def submit_batch_builder_trx_batch(self, transactions: List[TransactionWithOptionalSignature],
+    async def submit_batch_builder_txs_batch(self, transactions: List[TransactionWithOptionalSignature],
                                              signature: TxEthSignature) -> List[Transaction]:
         trans = [tr.dict() for tr in transactions]
         params = [trans, signature.dict()]

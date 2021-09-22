@@ -123,7 +123,7 @@ class TestWallet(IsolatedAsyncioTestCase):
             builder.add_transfer(self.receiver_address, "ETH", Decimal("0.00005"))
         build_result = await builder.build()
         print(f"Total fees: {build_result.total_fees}")
-        transactions = await self.wallet.zk_provider.submit_batch_builder_trx_batch(build_result.transactions,
+        transactions = await self.wallet.zk_provider.submit_batch_builder_txs_batch(build_result.transactions,
                                                                                     build_result.signature)
         for i, tran in enumerate(transactions):
             try:
@@ -140,7 +140,7 @@ class TestWallet(IsolatedAsyncioTestCase):
         builder.add_transfer(self.receiver_address, "USDT", Decimal("0.001"))
         build_result = await builder.build()
         print(f"Total fees: {build_result.total_fees}")
-        transactions = await self.wallet.zk_provider.submit_batch_builder_trx_batch(build_result.transactions,
+        transactions = await self.wallet.zk_provider.submit_batch_builder_txs_batch(build_result.transactions,
                                                                                     build_result.signature)
         self.assertEqual(len(transactions), 2)
         for i, tran in enumerate(transactions):
@@ -160,7 +160,7 @@ class TestWallet(IsolatedAsyncioTestCase):
                              )
         build_result = await builder.build()
         print(f"Total fees: {build_result.total_fees}")
-        transactions = await self.wallet.zk_provider.submit_batch_builder_trx_batch(build_result.transactions,
+        transactions = await self.wallet.zk_provider.submit_batch_builder_txs_batch(build_result.transactions,
                                                                                     build_result.signature)
         self.assertEqual(len(transactions), 1)
 
@@ -179,7 +179,7 @@ class TestWallet(IsolatedAsyncioTestCase):
                              )
         build_result = await builder.build()
         print(f"Total fees: {build_result.total_fees}")
-        transactions = await self.wallet.zk_provider.submit_batch_builder_trx_batch(build_result.transactions,
+        transactions = await self.wallet.zk_provider.submit_batch_builder_txs_batch(build_result.transactions,
                                                                                     build_result.signature)
         self.assertEqual(len(transactions), 1)
 
@@ -205,7 +205,7 @@ class TestWallet(IsolatedAsyncioTestCase):
                                  )
         build_result = await builder.build()
         print(f"Total fees: {build_result.total_fees}")
-        transactions = await self.wallet.zk_provider.submit_batch_builder_trx_batch(build_result.transactions,
+        transactions = await self.wallet.zk_provider.submit_batch_builder_txs_batch(build_result.transactions,
                                                                                     build_result.signature)
         self.assertEqual(len(transactions), 1)
         try:
@@ -236,7 +236,7 @@ class TestWallet(IsolatedAsyncioTestCase):
             builder.add_swap((order1, order2), 'ETH')
         build_result = await builder.build()
         print(f"Total fees: {build_result.total_fees}")
-        transactions = await self.wallet.zk_provider.submit_batch_builder_trx_batch(build_result.transactions,
+        transactions = await self.wallet.zk_provider.submit_batch_builder_txs_batch(build_result.transactions,
                                                                                     build_result.signature)
         self.assertEqual(len(transactions), test_n)
         for i, tran in enumerate(transactions):

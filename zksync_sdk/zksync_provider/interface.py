@@ -36,7 +36,7 @@ class ZkSyncProviderInterface(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    async def submit_batch_builder_trx_batch(self, transactions: List[TransactionWithOptionalSignature],
+    async def submit_batch_builder_txs_batch(self, transactions: List[TransactionWithOptionalSignature],
                                              signature: TxEthSignature) -> List[Transaction]:
         raise NotImplementedError
 
