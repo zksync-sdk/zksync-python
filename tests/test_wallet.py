@@ -204,6 +204,10 @@ class TestWallet(IsolatedAsyncioTestCase):
               PS: previous version of the tests was passing due to no one does not test the trasaction result
                   it failed
         """
+        state = await self.wallet.zk_provider.get_state(self.nft_transfer_account_address)
+        if isinstance(state.id, int):
+            print(f"id: {state.id}")
+
         account_state = await self.wallet.zk_provider.get_state(self.nft_transfer_account_address)
         nfts = account_state.verified.nfts.values()
         if not nfts:
@@ -278,6 +282,13 @@ class TestEthereumProvider(IsolatedAsyncioTestCase):
             id=20, symbol='BAT',
             decimals=18)
         assert await self.ethereum_provider.full_exit(token, 6713)
+
+    async def test_full_exit_nft(self):
+        token = Token(
+            address=Web3.toChecksumAddress('0x5e71f0f9b891f22d79ff8697dd4e3e0db371cda5'),
+            id=70848, symbol='NFT-70848',
+            decimals=0)
+        assert await self.ethereum_provider.full_exit_nft(token, 36357)
 
     async def test_is_deposit_approved(self):
         token = Token(
