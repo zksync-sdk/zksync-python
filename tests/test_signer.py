@@ -5,7 +5,7 @@ from web3 import Account
 
 from zksync_sdk import ZkSyncLibrary
 from zksync_sdk.serializers import closest_packable_amount, closest_packable_transaction_fee
-from zksync_sdk.types import ChainId, ForcedExit, Token, Transfer, Withdraw, MintNFT, WithdrawNFT, Order, Swap
+from zksync_sdk.types import ChainId, ForcedExit, Token, Transfer, Withdraw, MintNFT, WithdrawNFT, Order, Swap, Tokens
 from zksync_sdk.zksync_signer import ZkSyncSigner
 
 PRIVATE_KEY = "0x000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f"
@@ -66,6 +66,26 @@ class ZkSyncSignerTest(TestCase):
                     fee_token=token3, fee=123)
         res = "f40100000005ede35562d3555e61120a151b3c8e8e91d83a378a000000017b1e76f6f124bae1917435a02cfbf5571d79ddb8380bc4bf4858c9e9969487000000030f600001e848000004c4b400"
         assert swap.encoded_message().hex() == res
+
+    def test_order_serialization(self):
+        token1 = Token(id=1, symbol='', address='', decimals=0)  # only id matters
+        token2 = Token(id=2, symbol='', address='', decimals=0)  # only id matters
+        tokens = Tokens(tokens=[token1, token2])
+
+        order = Order(account_id=7, nonce=18, token_sell=token1, token_buy=token2,
+                      ratio=Fraction(1, 4), amount=1000000,
+                      recipient='0x823b6a996cea19e0c41e250b20e2e804ea72ccdf',
+                      valid_from=0, valid_until=4294967295)
+        json = order.dict()
+        from_json_order = Order.from_json(json, tokens)
+        self.assertEqual(order.account_id, from_json_order.account_id)
+        self.assertEqual(order.nonce, from_json_order.nonce)
+        self.assertEqual(order.token_sell, from_json_order.token_sell)
+        self.assertEqual(order.token_buy, from_json_order.token_buy)
+        self.assertEqual(order.ratio, from_json_order.ratio)
+        self.assertEqual(order.recipient, from_json_order.recipient)
+        self.assertEqual(order.valid_from, from_json_order.valid_from)
+        self.assertEqual(order.valid_until, from_json_order.valid_until)
 
     def test_forced_exit_bytes(self):
         tr = ForcedExit(

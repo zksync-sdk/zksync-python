@@ -409,7 +409,7 @@ class ForcedExit(EncodedTx):
         return message
 
     def batch_message_part(self) -> str:
-        message = f"ForcedExit {self.token.symbol} to: {self.target.lower()}\n"\
+        message = f"ForcedExit {self.token.symbol} to: {self.target.lower()}\n" \
                   f"Fee: {self.token.decimal_str_amount(self.fee)} {self.token.symbol}\n"
         return message
 
@@ -440,6 +440,35 @@ class Order(EncodedTx):
     valid_until: int
     signature: Optional[TxSignature] = None
     eth_signature: Optional[TxEthSignature] = None
+
+    @classmethod
+    def from_json(cls, json: dict, tokens: Tokens):
+        token_sell_id: int = json["tokenSell"]
+        token_buy_id : int = json["tokenBuy"]
+        token_sell = tokens.find_by_id(token_sell_id)
+        token_buy = tokens.find_by_id(token_buy_id)
+        ratio = json["ratio"]
+
+        # INFO: could be None
+        signature = json.get("signature")
+        if signature is not None:
+            signature = TxSignature.from_dict(signature)
+        ether_sig = json.get("ethSignature")
+        if ether_sig is not None:
+            ether_sig = TxEthSignature.from_dict(ether_sig)
+        return cls(
+            account_id=json["accountId"],
+            recipient=json["recipient"],
+            nonce=json["nonce"],
+            token_sell=token_sell,
+            token_buy=token_buy,
+            amount=json["amount"],
+            ratio=Fraction(ratio[0], ratio[1]),
+            valid_from=json["validFrom"],
+            valid_until=json["validUntil"],
+            signature=signature,
+            eth_signature=ether_sig
+        )
 
     def tx_type(self) -> int:
         raise NotImplementedError
@@ -586,8 +615,8 @@ class MintNFT(EncodedTx):
         ])
 
     def human_readable_message(self) -> str:
-        message = f"MintNFT {self.content_hash} for: {self.recipient.lower()}\n"\
-                f"Fee: {self.fee_token.decimal_str_amount(self.fee)} {self.fee_token.symbol}\nNonce: {self.nonce}"
+        message = f"MintNFT {self.content_hash} for: {self.recipient.lower()}\n" \
+                  f"Fee: {self.fee_token.decimal_str_amount(self.fee)} {self.fee_token.symbol}\nNonce: {self.nonce}"
         return message
 
     def batch_message_part(self) -> str:
