@@ -443,10 +443,16 @@ class Order(EncodedTx):
 
     @classmethod
     def from_json(cls, json: dict, tokens: Tokens):
+
+        def from_optional(value: Optional[Token]) -> Token:
+            if value is None:
+                raise ValueError(f"Token None value should not be used")
+            return value
+
         token_sell_id: int = json["tokenSell"]
-        token_buy_id : int = json["tokenBuy"]
-        token_sell = tokens.find_by_id(token_sell_id)
-        token_buy = tokens.find_by_id(token_buy_id)
+        token_buy_id: int = json["tokenBuy"]
+        token_sell = from_optional(tokens.find_by_id(token_sell_id))
+        token_buy = from_optional(tokens.find_by_id(token_buy_id))
         ratio = json["ratio"]
 
         # INFO: could be None
