@@ -17,16 +17,16 @@ class TxEthSignature:
         """
         Only the difference from __init__ that signature is already in hex format
         """
-        obj = cls(type=json["type"], signature=b"")
+        obj = cls(sig_type=json["type"], signature=b"")
         obj.signature = json["signature"]
 
-    def __init__(self, type: SignatureType, signature: bytes):
+    def __init__(self, sig_type: SignatureType, signature: bytes):
         self.signature = signature.hex()
-        self.type = type
+        self.sig_type = sig_type
 
     def dict(self):
         return {
-            "type":      self.type.value,
+            "type":      self.sig_type.value,
             "signature": self.signature
         }
 

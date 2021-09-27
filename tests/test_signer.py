@@ -41,7 +41,7 @@ class ZkSyncSignerTest(TestCase):
 
     def test_order_bytes(self):
         token1 = Token.eth()
-        token2 = Token(id=2, symbol='', address='', decimals=0) # only id matters
+        token2 = Token(id=2, symbol='', address='', decimals=0)  # only id matters
         order = Order(account_id=6, nonce=18, token_sell=token1, token_buy=token2,
                       ratio=Fraction(1, 2), amount=1000000,
                       recipient='0x823b6a996cea19e0c41e250b20e2e804ea72ccdf',
@@ -50,17 +50,17 @@ class ZkSyncSignerTest(TestCase):
         assert order.encoded_message().hex() == res
 
     def test_swap_bytes(self):
-        token1 = Token(id=1, symbol='', address='', decimals=0) # only id matters
-        token2 = Token(id=2, symbol='', address='', decimals=0) # only id matters
-        token3 = Token(id=3, symbol='', address='', decimals=0) # only id matters
+        token1 = Token(id=1, symbol='', address='', decimals=0)  # only id matters
+        token2 = Token(id=2, symbol='', address='', decimals=0)  # only id matters
+        token3 = Token(id=3, symbol='', address='', decimals=0)  # only id matters
         order1 = Order(account_id=6, nonce=18, token_sell=token1, token_buy=token2,
-                      ratio=Fraction(1, 2), amount=1000000,
-                      recipient='0x823b6a996cea19e0c41e250b20e2e804ea72ccdf',
-                      valid_from=0, valid_until=4294967295)
+                       ratio=Fraction(1, 2), amount=1000000,
+                       recipient='0x823b6a996cea19e0c41e250b20e2e804ea72ccdf',
+                       valid_from=0, valid_until=4294967295)
         order2 = Order(account_id=44, nonce=101, token_sell=token2, token_buy=token1,
-                      ratio=Fraction(3, 1), amount=2500000,
-                      recipient='0x63adbb48d1bc2cf54562910ce54b7ca06b87f319',
-                      valid_from=0, valid_until=4294967295)
+                       ratio=Fraction(3, 1), amount=2500000,
+                       recipient='0x63adbb48d1bc2cf54562910ce54b7ca06b87f319',
+                       valid_from=0, valid_until=4294967295)
         swap = Swap(orders=(order1, order2), nonce=1, amounts=(1000000, 2500000),
                     submitter_id=5, submitter_address="0xedE35562d3555e61120a151B3c8e8e91d83a378a",
                     fee_token=token3, fee=123)
@@ -86,6 +86,33 @@ class ZkSyncSignerTest(TestCase):
         self.assertEqual(order.recipient, from_json_order.recipient)
         self.assertEqual(order.valid_from, from_json_order.valid_from)
         self.assertEqual(order.valid_until, from_json_order.valid_until)
+
+    def test_is_valid_zk_sync_signature(self):
+        account = Account.from_key(PRIVATE_KEY)
+        signer = ZkSyncSigner.from_account(account, self.library, ChainId.MAINNET)
+
+        transfer = Transfer(from_address="0xedE35562d3555e61120a151B3c8e8e91d83a378a",
+                            to_address="0x19aa2ed8712072e918632259780e587698ef58df",
+                            token=Token.eth(),
+                            amount=1000000000000,
+                            fee=1000000,
+                            nonce=12,
+                            valid_from=0,
+                            valid_until=4294967295, account_id=44)
+        zk_sync_signature = signer.sign_tx(transfer)
+        ret = signer.is_valid_signature(zk_sync_signature, transfer)
+        self.assertTrue(ret)
+
+        # INFO: negative case
+        force_exit = ForcedExit(
+            target="0x19aa2ed8712072e918632259780e587698ef58df",
+            token=Token.eth(),
+            fee=1000000, nonce=12, valid_from=0,
+            valid_until=4294967295, initiator_account_id=44
+        )
+        ret = signer.is_valid_signature(zk_sync_signature, force_exit)
+        self.assertFalse(ret)
+
 
     def test_forced_exit_bytes(self):
         tr = ForcedExit(
