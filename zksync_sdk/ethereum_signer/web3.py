@@ -17,7 +17,7 @@ class EthereumSignerWeb3(EthereumSignerInterface):
 
     def sign(self, message: bytes) -> TxEthSignature:
         signature = self.account.sign_message(encode_defunct(message))
-        return TxEthSignature(signature=signature.signature, type=SignatureType.ethereum_signature)
+        return TxEthSignature(signature=signature.signature, sig_type=SignatureType.ethereum_signature)
 
     def address(self) -> str:
         return self.account.address
