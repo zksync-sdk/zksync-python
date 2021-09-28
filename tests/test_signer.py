@@ -10,6 +10,8 @@ from zksync_sdk.zksync_signer import ZkSyncSigner
 
 PRIVATE_KEY = "0x000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f"
 
+import json
+
 
 class ZkSyncSignerTest(TestCase):
     def setUp(self):
@@ -113,6 +115,78 @@ class ZkSyncSignerTest(TestCase):
         ret = signer.is_valid_signature(zk_sync_signature, force_exit)
         self.assertFalse(ret)
 
+    def test_order_from_json_sign_checking(self):
+        """
+        json RPC could look like(Dumped from test_swap case):
+        "orders":
+        [
+            {
+                "accountId": 36357,
+                "recipient": "0x995A8B7F96cB837533b79775b6209696D51f435C",
+                "nonce": 3504,
+                "tokenSell": 1,
+                "tokenBuy": 0,
+                "amount": 1000000,
+                "ratio": [
+                    3,
+                    2000000000
+                ],
+                "validFrom": 0,
+                "validUntil": 4294967295,
+                "signature": {
+                    "pubKey": "c5f281dbaed050c711bef0e48f74cc32046f82d0f814fb891f2da81c5f5f512b",
+                    "signature": "bfb405fa1068a1c5f72d549aa9693f456597f9b0717d968f7e44e13782393b81fd85ea25ba9062cb581f5f9162ca49ae14e53868e7967b4999c39bcf43d3c302"
+                },
+                "ethSignature": {
+                    "type": "EthereumSignature",
+                    "signature": "0x397c0d833a3390bcf111288ffcc0c20517bd54f17f385985cd5d37ff3ca77cdf10344ccac188c0bffd31ee9368b7aec4bc0e32f472c5cec20fb2f47b64e380211c"
+                }
+            },
+            {
+                "accountId": 182280,
+                "recipient": "0x800455Ca06265D0Cf742086663a527D7c08049Fc",
+                "nonce": 342,
+                "tokenSell": 0,
+                "tokenBuy": 1,
+                "amount": 700000000000000,
+                "ratio": [
+                    2500000000,
+                    3
+                ],
+                "validFrom": 0,
+                "validUntil": 4294967295,
+                "signature": {
+                    "pubKey": "4aba48964e109b2dea104ab757156267723eb6d2a3c707a951ef6c86ab535b93",
+                    "signature": "209de0c7125ffc732ca8632613a7d8930d1a5f19d9f2e45686645a3bb5bc1f9ea22b7b365f7ef1428648d4881815ad9aba3b15853b17e672a55e89ea1da9ec00"
+                },
+                "ethSignature": {
+                    "type": "EthereumSignature",
+                    "signature": "0xdbc0611369f3313fdf7ea3e1b57794945c0ea5ec9d8cf8feec8cb914f572f4703cf23a333882d70ba036a7f864433692041227bdc03e20730e6be85ea701e1711c"
+                }
+            }
+        ]
+        so steps are the following:
+        1. build from Json Python object
+        2. check its signature
+        """
+        account = Account.from_key(PRIVATE_KEY)
+        signer = ZkSyncSigner.from_account(account, self.library, ChainId.MAINNET)
+
+        token1 = Token(id=1, symbol='', address='', decimals=0)  # only id matters
+        token2 = Token(id=2, symbol='', address='', decimals=0)  # only id matters
+        tokens_pool = Tokens(tokens=[token1, token2])
+
+        order = Order(account_id=7, nonce=18, token_sell=token1, token_buy=token2,
+                      ratio=Fraction(1, 4), amount=1000000,
+                      recipient='0x823b6a996cea19e0c41e250b20e2e804ea72ccdf',
+                      valid_from=0, valid_until=4294967295)
+
+        order.signature = signer.sign_tx(order)
+        serialized_order = json.dumps(order.dict(), indent=4)
+        print(f"json : {serialized_order}")
+        deserialized_order = Order.from_json(json.loads(serialized_order), tokens_pool)
+        ret = signer.is_valid_signature(deserialized_order.signature, deserialized_order)
+        self.assertTrue(ret)
 
     def test_forced_exit_bytes(self):
         tr = ForcedExit(

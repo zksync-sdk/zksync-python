@@ -19,6 +19,7 @@ class TxEthSignature:
         """
         obj = cls(sig_type=json["type"], signature=b"")
         obj.signature = json["signature"]
+        return obj
 
     def __init__(self, sig_type: SignatureType, signature: bytes):
         self.signature = signature.hex()
@@ -44,6 +45,7 @@ class TxSignature:
         obj = cls(public_key=b"", signature=b"")
         obj.public_key = json["pubKey"]
         obj.signature = json["signature"]
+        return obj
 
     def __init__(self, public_key: bytes, signature: bytes):
         self.public_key = public_key.hex()
