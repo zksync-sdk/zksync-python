@@ -48,10 +48,3 @@ class ZkSyncSigner:
     def sign_tx(self, message: EncodedTx) -> TxSignature:
         signature = self.library.sign(self.private_key, message.encoded_message())
         return TxSignature(signature=signature, public_key=self.public_key)
-
-    def is_valid_signature(self, zk_sync_signature: TxSignature, message: EncodedTx) -> bool:
-        bytes_signature = bytes.fromhex(zk_sync_signature.signature)
-        pubkey = bytes.fromhex(zk_sync_signature.public_key)
-        return self.library.is_valid_signature(message.encoded_message(), pubkey, bytes_signature)
-
-

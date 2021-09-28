@@ -700,6 +700,19 @@ class WithdrawNFT(EncodedTx):
         }
 
 
+class EncodedTxValidator:
+    def __init__(self, library: ZkSyncLibrary):
+        self.library = library
+
+    def is_valid_signature(self, tx):
+        zk_sync_signature: TxSignature = tx.signature
+        if zk_sync_signature is None:
+            return False
+        bytes_signature = bytes.fromhex(zk_sync_signature.signature)
+        pubkey = bytes.fromhex(zk_sync_signature.public_key)
+        return self.library.is_valid_signature(tx.encoded_message(), pubkey, bytes_signature)
+
+
 @dataclass
 class TransactionWithSignature:
     tx: EncodedTx
