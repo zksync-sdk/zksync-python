@@ -7,11 +7,10 @@ from zksync_sdk.ethereum_signer import EthereumSignerInterface
 from zksync_sdk.types import (ChangePubKey, ChangePubKeyCREATE2, ChangePubKeyEcdsa,
                               ChangePubKeyTypes, EncodedTx, ForcedExit, Token, TokenLike,
                               Tokens, TransactionWithSignature, Transfer, TxEthSignature,
-                              Withdraw, MintNFT, WithdrawNFT, NFT, Order, Swap, RatioType)
+                              Withdraw, MintNFT, WithdrawNFT, NFT, Order, Swap, RatioType, token_ratio_to_wei_ratio)
 from zksync_sdk.zksync_provider import FeeTxType, ZkSyncProviderInterface
 from zksync_sdk.zksync_signer import ZkSyncSigner
 from zksync_sdk.zksync_provider.transaction import Transaction
-from zksync_sdk.serializers import token_ratio_to_wei_ratio
 
 DEFAULT_VALID_FROM = 0
 DEFAULT_VALID_UNTIL = 2 ** 32 - 1

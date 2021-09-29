@@ -1,8 +1,3 @@
-from decimal import Decimal
-from typing import List
-from fractions import Fraction
-from zksync_sdk.types import Token
-
 AMOUNT_EXPONENT_BIT_WIDTH = 5
 AMOUNT_MANTISSA_BIT_WIDTH = 35
 FEE_EXPONENT_BIT_WIDTH = 5
@@ -223,8 +218,3 @@ def serialize_content_hash(content_hash: str) -> bytes:
 def serialize_ratio_part(part: int) -> bytes:
     # turn the number into bytes and 0-pad to length 15
     return bytes.fromhex(hex(part)[2:].zfill(15*2))
-
-def token_ratio_to_wei_ratio(token_ratio: Fraction, token_sell: Token, token_buy: Token) -> Fraction:
-    num = token_sell.from_decimal(Decimal(token_ratio.numerator))
-    den = token_buy.from_decimal(Decimal(token_ratio.denominator))
-    return Fraction(num, den)
