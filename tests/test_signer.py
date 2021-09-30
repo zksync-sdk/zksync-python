@@ -3,7 +3,8 @@ from fractions import Fraction
 
 from web3 import Account
 
-from zksync_sdk import ZkSyncLibrary
+from zksync_sdk import ZkSyncLibrary, EthereumSignerWeb3
+from zksync_sdk.ethereum_signer.web3 import TxEthValidator
 from zksync_sdk.serializers import closest_packable_amount, closest_packable_transaction_fee
 from zksync_sdk.types import ChainId, ForcedExit, Token, Transfer, Withdraw, MintNFT, WithdrawNFT, Order, Swap, Tokens, \
     EncodedTxValidator
@@ -90,33 +91,7 @@ class ZkSyncSignerTest(TestCase):
         self.assertEqual(order.valid_from, from_json_order.valid_from)
         self.assertEqual(order.valid_until, from_json_order.valid_until)
 
-    def test_order_from_json_sign_checking(self):
-        """
-        Order could look liks:
-        {
-            "accountId": 7,
-            "recipient": "0x823b6a996cea19e0c41e250b20e2e804ea72ccdf",
-            "nonce": 18,
-            "tokenSell": 1,
-            "tokenBuy": 2,
-            "amount": 1000000,
-            "ratio": [
-                1,
-                4
-            ],
-            "validFrom": 0,
-            "validUntil": 4294967295,
-            "signature": {
-                "pubKey": "40771354dc314593e071eaf4d0f42ccb1fad6c7006c57464feeb7ab5872b7490",
-                "signature": "ff46c6c6e088dce0d16e0cada37a2cada64d43e114b8991155ed2e1475ef59225dbe474253ca9a42c7c78c9f0aa681fa0d5d5219197b7aad24c205a30439c203"
-            },
-            "ethSignature": null
-        }
-
-        so steps are the following:
-        1. build from Json Python object
-        2. check its signature
-        """
+    def test_order_zksync_signature_checking(self):
         account = Account.from_key(PRIVATE_KEY)
         signer = ZkSyncSigner.from_account(account, self.library, ChainId.MAINNET)
 
@@ -136,6 +111,31 @@ class ZkSyncSignerTest(TestCase):
         print(f"json : {serialized_order}")
         deserialized_order = Order.from_json(json.loads(serialized_order), tokens_pool)
         ret = validator.is_valid_signature(deserialized_order)
+        self.assertTrue(ret)
+
+    def test_is_valid_order_deserialized(self):
+        account = Account.from_key(PRIVATE_KEY)
+        zksync_signer = ZkSyncSigner.from_account(account, self.library, ChainId.MAINNET)
+        ethereum_signer = EthereumSignerWeb3(account=account)
+
+        token1 = Token(id=1, symbol='', address='', decimals=0)  # only id matters
+        token2 = Token(id=2, symbol='', address='', decimals=0)  # only id matters
+        tokens_pool = Tokens(tokens=[token1, token2])
+
+        order = Order(account_id=7, nonce=18, token_sell=token1, token_buy=token2,
+                      ratio=Fraction(1, 4), amount=1000000,
+                      recipient='0x823b6a996cea19e0c41e250b20e2e804ea72ccdf',
+                      valid_from=0, valid_until=4294967295)
+        order.signature = zksync_signer.sign_tx(order)
+        order.eth_signature = ethereum_signer.sign_tx(order)
+        zksync_validator = EncodedTxValidator(self.library)
+        etherium_validator = TxEthValidator(signer=ethereum_signer)
+        serialized_order = json.dumps(order.dict(), indent=4)
+
+        deserialized_order = Order.from_json(json.loads(serialized_order), tokens_pool)
+        ret = zksync_validator.is_valid_signature(deserialized_order)
+        self.assertTrue(ret)
+        ret = etherium_validator.is_valid_signature(deserialized_order.eth_signature, deserialized_order)
         self.assertTrue(ret)
 
     def test_forced_exit_bytes(self):
