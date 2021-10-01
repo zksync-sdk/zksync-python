@@ -129,13 +129,13 @@ class ZkSyncSignerTest(TestCase):
         order.signature = zksync_signer.sign_tx(order)
         order.eth_signature = ethereum_signer.sign_tx(order)
         zksync_validator = EncodedTxValidator(self.library)
-        etherium_validator = TxEthValidator(signer=ethereum_signer)
+        etherium_validator = TxEthValidator(signer_address=ethereum_signer.address())
         serialized_order = json.dumps(order.dict(), indent=4)
 
         deserialized_order = Order.from_json(json.loads(serialized_order), tokens_pool)
         ret = zksync_validator.is_valid_signature(deserialized_order)
         self.assertTrue(ret)
-        ret = etherium_validator.is_valid_signature(deserialized_order.eth_signature, deserialized_order)
+        ret = etherium_validator.is_valid_signature(deserialized_order)
         self.assertTrue(ret)
 
     def test_forced_exit_bytes(self):

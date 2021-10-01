@@ -19,14 +19,11 @@ class EthereumSignerInterface(ABC):
     def address(self) -> str:
         raise NotImplementedError
 
-    def recovery_message(self, tx: TxEthSignature, message: bytes) -> str:
-        raise NotImplementedError
-
 
 class TxEthValidatorInterface(ABC):
-    def __init__(self, signer: EthereumSignerInterface):
-        self.signer = signer
+    def __init__(self, signer_address: str):
+        self.signer_address = signer_address
 
     @abstractmethod
-    def is_valid_signature(self, eth_signature: TxEthSignature, tx: EncodedTx) -> bool:
+    def is_valid_signature(self, tx: EncodedTx) -> bool:
         raise NotImplementedError
