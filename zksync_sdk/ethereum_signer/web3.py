@@ -1,7 +1,7 @@
 from eth_account.messages import encode_defunct, defunct_hash_message
 from eth_account.signers.base import BaseAccount
 from web3.auto import w3
-
+from typing import Optional
 from zksync_sdk.ethereum_signer.interface import EthereumSignerInterface, TxEthValidatorInterface
 from zksync_sdk.types import EncodedTx, SignatureType, TxEthSignature, Order
 
@@ -28,7 +28,13 @@ class TxEthValidator(TxEthValidatorInterface):
 
     def is_valid_signature(self, tx: Order) -> bool:
         msg = tx.human_readable_message().encode()
-        address = self.recover_signer_address(tx.eth_signature, msg)
+
+        def get_sig(opt_value: Optional[TxEthSignature]) -> TxEthSignature:
+            if opt_value is None:
+                raise ValueError()
+            return opt_value
+
+        address = self.recover_signer_address(get_sig(tx.eth_signature), msg)
         return self.signer_address == address
 
     @staticmethod
@@ -37,4 +43,3 @@ class TxEthValidator(TxEthValidatorInterface):
         # INFO: remove prefix 0x
         sig = bytes.fromhex(tx.signature[2:])
         return w3.eth.account.recover_message(encoded_message, signature=sig)
-
