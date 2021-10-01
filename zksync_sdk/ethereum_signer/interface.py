@@ -1,8 +1,8 @@
 from abc import ABC, abstractmethod
 
-from zksync_sdk.types import EncodedTx, TxEthSignature, Order
+from zksync_sdk.types import EncodedTx, TxEthSignature
 
-__all__ = ['EthereumSignerInterface', 'TxEthValidatorInterface']
+__all__ = ['EthereumSignerInterface']
 
 
 class EthereumSignerInterface(ABC):
@@ -17,13 +17,4 @@ class EthereumSignerInterface(ABC):
 
     @abstractmethod
     def address(self) -> str:
-        raise NotImplementedError
-
-
-class TxEthValidatorInterface(ABC):
-    def __init__(self, signer_address: str):
-        self.signer_address = signer_address
-
-    @abstractmethod
-    def is_valid_signature(self, tx: Order) -> bool:
         raise NotImplementedError

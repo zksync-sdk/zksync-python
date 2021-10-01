@@ -4,7 +4,6 @@ from fractions import Fraction
 from web3 import Account
 
 from zksync_sdk import ZkSyncLibrary, EthereumSignerWeb3
-from zksync_sdk.ethereum_signer.web3 import TxEthValidator
 from zksync_sdk.serializers import closest_packable_amount, closest_packable_transaction_fee
 from zksync_sdk.types import ChainId, ForcedExit, Token, Transfer, Withdraw, MintNFT, WithdrawNFT, Order, Swap, Tokens, \
     EncodedTxValidator
@@ -129,13 +128,12 @@ class ZkSyncSignerTest(TestCase):
         order.signature = zksync_signer.sign_tx(order)
         order.eth_signature = ethereum_signer.sign_tx(order)
         zksync_validator = EncodedTxValidator(self.library)
-        etherium_validator = TxEthValidator(signer_address=ethereum_signer.address())
         serialized_order = json.dumps(order.dict(), indent=4)
 
         deserialized_order = Order.from_json(json.loads(serialized_order), tokens_pool)
         ret = zksync_validator.is_valid_signature(deserialized_order)
         self.assertTrue(ret)
-        ret = etherium_validator.is_valid_signature(deserialized_order)
+        ret = deserialized_order.is_valid_eth_signature(ethereum_signer.address())
         self.assertTrue(ret)
 
     def test_forced_exit_bytes(self):
