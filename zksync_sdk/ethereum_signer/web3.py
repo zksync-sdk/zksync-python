@@ -3,7 +3,7 @@ from eth_account.signers.base import BaseAccount
 from web3.auto import w3
 
 from zksync_sdk.ethereum_signer.interface import EthereumSignerInterface, TxEthValidatorInterface
-from zksync_sdk.types import EncodedTx, SignatureType, TxEthSignature
+from zksync_sdk.types import EncodedTx, SignatureType, TxEthSignature, Order
 
 __all__ = ['EthereumSignerWeb3', 'TxEthValidator']
 
@@ -26,7 +26,7 @@ class EthereumSignerWeb3(EthereumSignerInterface):
 
 class TxEthValidator(TxEthValidatorInterface):
 
-    def is_valid_signature(self, tx: EncodedTx) -> bool:
+    def is_valid_signature(self, tx: Order) -> bool:
         msg = tx.human_readable_message().encode()
         address = self.recover_signer_address(tx.eth_signature, msg)
         return self.signer_address == address
