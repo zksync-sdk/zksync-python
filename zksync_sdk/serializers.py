@@ -80,7 +80,7 @@ def bits_into_bytes_in_be_order(bits: List[int]):
     for i in range(size):
         value = 0
         for j in range(8):
-            value |= bits[i*8 + j] * 2**(7-j)
+            value |= bits[i * 8 + j] * 2 ** (7 - j)
         result[i] = value
 
     return result
@@ -101,7 +101,7 @@ def buffer_to_bits_be(buff):
     res = [0] * len(buff) * 8
     for i, b in enumerate(buff):
         for j in range(8):
-            res[i*8 + j] = (b >> (7-j)) & 1
+            res[i * 8 + j] = (b >> (7 - j)) & 1
     return res
 
 
@@ -213,11 +213,13 @@ def serialize_address(address: str) -> bytes:
         raise WrongValueError
     return address_bytes
 
+
 def serialize_content_hash(content_hash: str) -> bytes:
     if content_hash.startswith('0x'):
         content_hash = content_hash[2:]
     return bytes.fromhex(content_hash)
 
+
 def serialize_ratio_part(part: int) -> bytes:
     # turn the number into bytes and 0-pad to length 15
-    return bytes.fromhex(hex(part)[2:].zfill(15*2))
+    return bytes.fromhex(hex(part)[2:].zfill(15 * 2))

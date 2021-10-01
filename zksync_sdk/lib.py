@@ -90,3 +90,12 @@ class ZkSyncLibrary:
         self.lib.rescue_hash_orders(orders_bytes, len(orders), orders_hash)
         return bytes(orders_hash.contents.data)
 
+    def is_valid_signature(self, message: bytes, public_key: bytes, zk_sync_signature: bytes) -> bool:
+        assert len(public_key) == PUBLIC_KEY_LEN
+        assert len(zk_sync_signature) == PACKED_SIGNATURE_LEN
+        public_key_ptr = ctypes.pointer(
+            ZksPackedPublicKey(data=(c_ubyte * PUBLIC_KEY_LEN)(*public_key)))
+        signature_ptr = ctypes.pointer(
+            ZksSignature(data=(c_ubyte * PACKED_SIGNATURE_LEN)(*zk_sync_signature)))
+        ret = self.lib.zks_crypto_verify_musig(message, len(message), public_key_ptr, signature_ptr)
+        return ret == 0

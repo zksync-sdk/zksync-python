@@ -1,6 +1,5 @@
 import asyncio
 from enum import Enum, auto
-import time
 
 
 class TransactionStatus(Enum):

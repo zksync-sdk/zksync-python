@@ -6,7 +6,6 @@ from enum import Enum, IntEnum
 from typing import List, Optional, Union, Tuple
 
 from pydantic import BaseModel
-
 from zksync_sdk.lib import ZkSyncLibrary
 from zksync_sdk.serializers import (int_to_bytes, packed_amount_checked, packed_fee_checked,
                                     serialize_account_id,
@@ -409,7 +408,7 @@ class ForcedExit(EncodedTx):
         return message
 
     def batch_message_part(self) -> str:
-        message = f"ForcedExit {self.token.symbol} to: {self.target.lower()}\n"\
+        message = f"ForcedExit {self.token.symbol} to: {self.target.lower()}\n" \
                   f"Fee: {self.token.decimal_str_amount(self.fee)} {self.token.symbol}\n"
         return message
 
@@ -440,6 +439,41 @@ class Order(EncodedTx):
     valid_until: int
     signature: Optional[TxSignature] = None
     eth_signature: Optional[TxEthSignature] = None
+
+    @classmethod
+    def from_json(cls, json: dict, tokens: Tokens):
+
+        def from_optional(value: Optional[Token]) -> Token:
+            if value is None:
+                raise ValueError(f"Token None value should not be used")
+            return value
+
+        token_sell_id: int = json["tokenSell"]
+        token_buy_id: int = json["tokenBuy"]
+        token_sell = from_optional(tokens.find_by_id(token_sell_id))
+        token_buy = from_optional(tokens.find_by_id(token_buy_id))
+        ratio = json["ratio"]
+
+        # INFO: could be None
+        signature = json.get("signature")
+        if signature is not None:
+            signature = TxSignature.from_dict(signature)
+        ether_sig = json.get("ethSignature")
+        if ether_sig is not None:
+            ether_sig = TxEthSignature.from_dict(ether_sig)
+        return cls(
+            account_id=json["accountId"],
+            recipient=json["recipient"],
+            nonce=json["nonce"],
+            token_sell=token_sell,
+            token_buy=token_buy,
+            amount=json["amount"],
+            ratio=Fraction(ratio[0], ratio[1]),
+            valid_from=json["validFrom"],
+            valid_until=json["validUntil"],
+            signature=signature,
+            eth_signature=ether_sig
+        )
 
     def tx_type(self) -> int:
         raise NotImplementedError
@@ -495,6 +529,33 @@ class Order(EncodedTx):
             "signature": self.signature.dict() if self.signature else None,
             "ethSignature": self.eth_signature.dict() if self.eth_signature else None,
         }
+
+    def is_valid_eth_signature(self, signer_address: str) -> bool:
+        address = self._recover_signer_address()
+        return signer_address == address
+
+    def _recover_signer_address(self) -> str:
+        """
+        INFO: particular case implementation with dependency from Web3 interface
+              if it's needed to generelize for all Obejct type(Transfer, Swap etc) move to etherium_signer module
+              with interface & implemnetation for Web3 as Validator class( Visitor pattern )
+        """
+        from web3.auto import w3
+        from eth_account.messages import encode_defunct
+
+        msg = self.human_readable_message().encode()
+        encoded_message = encode_defunct(msg)
+
+        def get_sig(opt_value: Optional[TxEthSignature]) -> TxEthSignature:
+            if opt_value is None:
+                raise ValueError()
+            return opt_value
+
+        # INFO: remove prefix 0x
+        eth_sig = get_sig(self.eth_signature)
+        sig = bytes.fromhex(eth_sig.signature[2:])
+        return w3.eth.account.recover_message(encoded_message, signature=sig)
+
 
 
 @dataclass
@@ -586,8 +647,8 @@ class MintNFT(EncodedTx):
         ])
 
     def human_readable_message(self) -> str:
-        message = f"MintNFT {self.content_hash} for: {self.recipient.lower()}\n"\
-                f"Fee: {self.fee_token.decimal_str_amount(self.fee)} {self.fee_token.symbol}\nNonce: {self.nonce}"
+        message = f"MintNFT {self.content_hash} for: {self.recipient.lower()}\n" \
+                  f"Fee: {self.fee_token.decimal_str_amount(self.fee)} {self.fee_token.symbol}\nNonce: {self.nonce}"
         return message
 
     def batch_message_part(self) -> str:
@@ -663,6 +724,19 @@ class WithdrawNFT(EncodedTx):
             "token": self.token_id,
             "signature": self.signature.dict(),
         }
+
+
+class EncodedTxValidator:
+    def __init__(self, library: ZkSyncLibrary):
+        self.library = library
+
+    def is_valid_signature(self, tx):
+        zk_sync_signature: TxSignature = tx.signature
+        if zk_sync_signature is None:
+            return False
+        bytes_signature = bytes.fromhex(zk_sync_signature.signature)
+        pubkey = bytes.fromhex(zk_sync_signature.public_key)
+        return self.library.is_valid_signature(tx.encoded_message(), pubkey, bytes_signature)
 
 
 @dataclass
