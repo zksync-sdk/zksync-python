@@ -17,7 +17,7 @@ class TxEthSignature:
         """
         Only the difference from __init__ that signature is already in hex format
         """
-        obj = cls(sig_type=json["type"], signature=b"")
+        obj = cls(sig_type=SignatureType(json["type"]), signature=b"")
         obj.signature = json["signature"]
         return obj
 
