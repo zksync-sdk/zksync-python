@@ -79,7 +79,7 @@ class TestWallet(IsolatedAsyncioTestCase):
         tr = await self.wallet.transfer(self.receiver_address,
                                         amount=Decimal("0.01"), token="USDC")
         try:
-            result = await tr.await_committed(attempts=20)
+            result = await tr.await_committed(attempts=20, attempts_timeout=100)
             self.assertEqual(result.status, TransactionStatus.COMMITTED)
         except Exception as ex:
             assert False, str(ex)
@@ -89,7 +89,7 @@ class TestWallet(IsolatedAsyncioTestCase):
         order2 = await self.wallets[0].get_order('ETH', 'USDT', Fraction(1, 1200), RatioType.token, Decimal('0.0007'))
         tr = await self.wallet.swap((order1, order2), 'ETH')
         try:
-            result = await tr.await_committed(attempts=100)
+            result = await tr.await_committed(attempts=100, attempts_timeout=100)
             self.assertEqual(result.status, TransactionStatus.COMMITTED)
         except Exception as ex:
             assert False, f"test_swap, getting status raises error: {ex}"
@@ -253,7 +253,7 @@ class TestWallet(IsolatedAsyncioTestCase):
         self.assertEqual(result.status, TransactionStatus.COMMITTED)
         tr = await self.wallet.forced_exit(self.forced_exit_account_address, "USDC")
         try:
-            result = await tr.await_verified(attempts_timeout=1000)
+            result = await tr.await_verified(attempts=10, attempts_timeout=1000)
             self.assertEqual(result.status, TransactionStatus.COMMITTED)
         except Exception as ex:
             assert False, f"test_forced_exit, getting transaction result has failed with error: {result.error_message}"
@@ -262,7 +262,7 @@ class TestWallet(IsolatedAsyncioTestCase):
         tr = await self.wallet.mint_nft("0x0000000000000000000000000000000000000000000000000000000000000123",
                                         self.receiver_address, "USDC")
         try:
-            result = await tr.await_committed(attempts=20)
+            result = await tr.await_committed(attempts=20, attempts_timeout=100)
             self.assertEqual(result.status, TransactionStatus.COMMITTED)
         except Exception as ex:
             assert False, f"test_mint_nft, getting transaction result has failed with error: {ex}"
@@ -334,7 +334,7 @@ class TestWallet(IsolatedAsyncioTestCase):
         tr = await self.wallet.withdraw(self.receiver_address,
                                         Decimal("0.000001"), "USDT")
         try:
-            result = await tr.await_committed(attempts=30)
+            result = await tr.await_committed(attempts=30, attempts_timeout=100)
             self.assertEqual(result.status, TransactionStatus.COMMITTED)
         except Exception as ex:
             assert False, f"test_withdraw, transaction has failed with error: {ex}"

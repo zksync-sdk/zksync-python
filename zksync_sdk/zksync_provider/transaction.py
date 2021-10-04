@@ -27,15 +27,18 @@ class Transaction:
         self.provider = provider
         self.transaction_hash = transaction_hash
 
-    async def await_committed(self, attempts: int = 10, attempts_timeout: int = 100) -> TransactionResult:
+    async def await_committed(self, attempts: Optional[int] = None, attempts_timeout: Optional[int] = None) \
+            -> TransactionResult:
         status = TransactionResult(TransactionStatus.FAILED,
                                    f"Transaction has not been executed with amount of attempts {attempts}"
                                    f"and timeout {attempts_timeout}")
         while True:
-            if attempts <= 0:
-                return status
+            if attempts is not None:
+                if attempts <= 0:
+                    return status
             transaction_details = await self.provider.get_tx_receipt(self.transaction_hash)
-            attempts -= 1
+            if attempts is not None:
+                attempts -= 1
             if "failReason" in transaction_details and transaction_details["failReason"] is not None:
                 return TransactionResult(TransactionStatus.FAILED, transaction_details['failReason'])
 
@@ -43,19 +46,22 @@ class Transaction:
                 block = transaction_details["block"]
                 if block is not None and "committed" in block and block["committed"]:
                     return TransactionResult(TransactionStatus.COMMITTED, "")
-            await asyncio.sleep(attempts_timeout / 1000)
+            if attempts_timeout is not None:
+                await asyncio.sleep(attempts_timeout / 1000)
 
-    async def await_verified(self, attempts: int = 10, attempts_timeout: int = 100):
+    async def await_verified(self, attempts: Optional[int] = None, attempts_timeout: Optional[int] = None):
         intermediate_status = TransactionResult(
             TransactionStatus.FAILED,
             f"Transaction has not been executed with amount of attempts {attempts}"
             f"and timeout {attempts_timeout}")
         while True:
-            if attempts <= 0:
-                return intermediate_status
+            if attempts is not None:
+                if attempts <= 0:
+                    return intermediate_status
 
             transaction_details = await self.provider.get_tx_receipt(self.transaction_hash)
-            attempts -= 1
+            if attempts is not None:
+                attempts -= 1
             if "failReason" in transaction_details and transaction_details["failReason"] is not None:
                 return TransactionResult(TransactionStatus.FAILED, transaction_details['failReason'])
 
@@ -70,4 +76,6 @@ class Transaction:
                         "verified" in block and \
                         block["verified"]:
                     return TransactionResult(TransactionStatus.VERIFIED, "")
-            await asyncio.sleep(attempts_timeout / 1000)
+
+            if attempts_timeout is not None:
+                await asyncio.sleep(attempts_timeout / 1000)
