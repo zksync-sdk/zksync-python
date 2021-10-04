@@ -13,7 +13,7 @@ class TransactionStatus(Enum):
 @dataclass
 class TransactionResult:
     status: TransactionStatus
-    error_message: str
+    fail_reason: str
 
 
 class Transaction:
