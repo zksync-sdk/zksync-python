@@ -111,6 +111,10 @@ class Token(BaseModel):
 
         return d_str
 
+def token_ratio_to_wei_ratio(token_ratio: Fraction, token_sell: Token, token_buy: Token) -> Fraction:
+    num = token_sell.from_decimal(Decimal(token_ratio.numerator))
+    den = token_buy.from_decimal(Decimal(token_ratio.denominator))
+    return Fraction(num, den)
 
 class Tokens(BaseModel):
     tokens: List[Token]
