@@ -9,7 +9,7 @@ class SignatureType(Enum):
 
 @dataclass
 class TxEthSignature:
-    type: SignatureType
+    sig_type: SignatureType
     signature: str
 
     @classmethod
