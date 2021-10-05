@@ -1,11 +1,19 @@
 import asyncio
+from dataclasses import dataclass
 from enum import Enum, auto
+from typing import Optional
 
 
 class TransactionStatus(Enum):
     FAILED = auto()
     COMMITTED = auto()
     VERIFIED = auto()
+
+
+@dataclass
+class TransactionResult:
+    status: TransactionStatus
+    fail_reason: str
 
 
 class Transaction:
@@ -19,44 +27,55 @@ class Transaction:
         self.provider = provider
         self.transaction_hash = transaction_hash
 
-    async def await_committed(self, attempts: int = 10, attempts_timeout: int = 100):
-        status = TransactionStatus.FAILED
+    async def await_committed(self, attempts: Optional[int] = None, attempts_timeout: Optional[int] = None) \
+            -> TransactionResult:
+        status = TransactionResult(TransactionStatus.FAILED,
+                                   f"Transaction has not been executed with amount of attempts {attempts}"
+                                   f"and timeout {attempts_timeout}")
         while True:
-            if attempts <= 0:
-                return status
+            if attempts is not None:
+                if attempts <= 0:
+                    return status
             transaction_details = await self.provider.get_tx_receipt(self.transaction_hash)
-            attempts -= 1
+            if attempts is not None:
+                attempts -= 1
             if "failReason" in transaction_details and transaction_details["failReason"] is not None:
-                print(f"Debug Error: {transaction_details['failReason']}")
-                return TransactionStatus.FAILED
+                return TransactionResult(TransactionStatus.FAILED, transaction_details['failReason'])
 
             if "block" in transaction_details:
                 block = transaction_details["block"]
                 if block is not None and "committed" in block and block["committed"]:
-                    return TransactionStatus.COMMITTED
-            await asyncio.sleep(attempts_timeout / 1000)
+                    return TransactionResult(TransactionStatus.COMMITTED, "")
+            if attempts_timeout is not None:
+                await asyncio.sleep(attempts_timeout / 1000)
 
-    async def await_verified(self, attempts: int = 10, attempts_timeout: int = 100):
-        intermediate_status = TransactionStatus.FAILED
+    async def await_verified(self, attempts: Optional[int] = None, attempts_timeout: Optional[int] = None):
+        intermediate_status = TransactionResult(
+            TransactionStatus.FAILED,
+            f"Transaction has not been executed with amount of attempts {attempts}"
+            f"and timeout {attempts_timeout}")
         while True:
-            if attempts <= 0:
-                return intermediate_status
+            if attempts is not None:
+                if attempts <= 0:
+                    return intermediate_status
 
             transaction_details = await self.provider.get_tx_receipt(self.transaction_hash)
-            attempts -= 1
+            if attempts is not None:
+                attempts -= 1
             if "failReason" in transaction_details and transaction_details["failReason"] is not None:
-                print(f"Debug Error: {transaction_details['failReason']}")
-                return TransactionStatus.FAILED
+                return TransactionResult(TransactionStatus.FAILED, transaction_details['failReason'])
 
             if "block" in transaction_details:
                 block = transaction_details["block"]
                 if block is not None and "committed" in block and block["committed"]:
-                    intermediate_status = TransactionStatus.COMMITTED
+                    intermediate_status = TransactionResult(TransactionStatus.COMMITTED, "")
 
             if "block" in transaction_details:
                 block = transaction_details["block"]
                 if block is not None and \
-                        "verified" in block and\
+                        "verified" in block and \
                         block["verified"]:
-                    return TransactionStatus.VERIFIED
-            await asyncio.sleep(attempts_timeout / 1000)
+                    return TransactionResult(TransactionStatus.VERIFIED, "")
+
+            if attempts_timeout is not None:
+                await asyncio.sleep(attempts_timeout / 1000)
