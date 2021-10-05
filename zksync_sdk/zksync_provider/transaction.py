@@ -15,7 +15,7 @@ class TransactionStatus(Enum):
 class TransactionResult:
     status: TransactionStatus
     fail_reason: str
-    block: BlockInfo
+    block: Optional[BlockInfo]
 
 
 class Transaction:
