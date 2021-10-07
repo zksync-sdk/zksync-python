@@ -2,11 +2,10 @@ import abc
 from dataclasses import dataclass
 from decimal import Decimal
 from fractions import Fraction
-from enum import Enum
+from enum import Enum, IntEnum
 from typing import List, Optional, Union, Tuple
 
 from pydantic import BaseModel
-
 from zksync_sdk.lib import ZkSyncLibrary
 from zksync_sdk.serializers import (int_to_bytes, packed_amount_checked, packed_fee_checked,
                                     serialize_account_id,
@@ -20,6 +19,16 @@ DEFAULT_TOKEN_ADDRESS = "0x0000000000000000000000000000000000000000"
 TokenLike = Union[str, int]
 
 TRANSACTION_VERSION = 0x01
+
+
+class EncodedTxType(IntEnum):
+    CHANGE_PUB_KEY = 7
+    TRANSFER = 5
+    WITHDRAW = 3
+    FORCED_EXIT = 8
+    SWAP = 11
+    MINT_NFT = 9
+    WITHDRAW_NFT = 10
 
 
 class ChangePubKeyTypes(Enum):
@@ -43,9 +52,9 @@ class ChangePubKeyEcdsa:
         return self.batch_hash
 
     def dict(self, signature: str):
-        return {"type":         "ECDSA",
+        return {"type": "ECDSA",
                 "ethSignature": signature,
-                "batchHash":    f"0x{self.batch_hash.hex()}"}
+                "batchHash": f"0x{self.batch_hash.hex()}"}
 
 
 @dataclass
@@ -58,8 +67,8 @@ class ChangePubKeyCREATE2:
         return self.salt_arg
 
     def dict(self):
-        return {"type":     "CREATE2",
-                "saltArg":  f"0x{self.salt_arg.hex()}",
+        return {"type": "CREATE2",
+                "saltArg": f"0x{self.salt_arg.hex()}",
                 "codeHash": f"0x{self.code_hash.hex()}"}
 
 
@@ -87,7 +96,7 @@ class Token(BaseModel):
 
     def decimal_str_amount(self, amount: int) -> str:
         d = self.decimal_amount(amount)
-        
+
         # Creates a string with `self.decimals` numbers after decimal point.
         # Prevents scientific notation (string values like '1E-8').
         # Prevents integral numbers having no decimal point in the string representation.
@@ -102,6 +111,10 @@ class Token(BaseModel):
 
         return d_str
 
+def token_ratio_to_wei_ratio(token_ratio: Fraction, token_sell: Token, token_buy: Token) -> Fraction:
+    num = token_sell.from_decimal(Decimal(token_ratio.numerator))
+    den = token_buy.from_decimal(Decimal(token_ratio.denominator))
+    return Fraction(num, den)
 
 class Tokens(BaseModel):
     tokens: List[Token]
@@ -156,6 +169,10 @@ class EncodedTx(abc.ABC):
     def dict(self):
         pass
 
+    @abc.abstractmethod
+    def batch_message_part(self) -> str:
+        pass
+
 
 @dataclass
 class ChangePubKey(EncodedTx):
@@ -175,6 +192,12 @@ class ChangePubKey(EncodedTx):
         message = f"Set signing key: {self.new_pk_hash.replace('sync:', '').lower()}"
         if self.fee:
             message += f"\nFee: {self.fee} {self.token.symbol}"
+        return message
+
+    def batch_message_part(self) -> str:
+        message = f"Set signing key: {self.new_pk_hash.replace('sync:', '').lower()}\n"
+        if self.fee:
+            message += f"Fee: {self.token.decimal_str_amount(self.fee)} {self.token.symbol}\n"
         return message
 
     def encoded_message(self) -> bytes:
@@ -211,22 +234,22 @@ class ChangePubKey(EncodedTx):
 
     def dict(self):
         return {
-            "type":        "ChangePubKey",
-            "accountId":   self.account_id,
-            "account":     self.account,
-            "newPkHash":   self.new_pk_hash,
-            "fee_token":   self.token.id,
-            "fee":         self.fee,
-            "nonce":       self.nonce,
+            "type": "ChangePubKey",
+            "accountId": self.account_id,
+            "account": self.account,
+            "newPkHash": self.new_pk_hash,
+            "fee_token": self.token.id,
+            "fee": self.fee,
+            "nonce": self.nonce,
             "ethAuthData": self.eth_auth_data,
-            "signature":   self.signature.dict(),
-            "validFrom":   self.valid_from,
-            "validUntil":  self.valid_until,
+            "signature": self.signature.dict(),
+            "validFrom": self.valid_from,
+            "validUntil": self.valid_until,
         }
 
     @classmethod
     def tx_type(cls):
-        return 7
+        return EncodedTxType.CHANGE_PUB_KEY
 
 
 @dataclass
@@ -243,7 +266,7 @@ class Transfer(EncodedTx):
     signature: Optional[TxSignature] = None
 
     def tx_type(self) -> int:
-        return 5
+        return EncodedTxType.TRANSFER
 
     def human_readable_message(self) -> str:
         msg = ""
@@ -252,8 +275,16 @@ class Transfer(EncodedTx):
             msg += f"Transfer {self.token.decimal_str_amount(self.amount)} {self.token.symbol} to: {self.to_address.lower()}\n"
         if self.fee != 0:
             msg += f"Fee: {self.token.decimal_str_amount(self.fee)} {self.token.symbol}\n"
-        
+
         return msg + f"Nonce: {self.nonce}"
+
+    def batch_message_part(self) -> str:
+        msg = ""
+        if self.amount != 0:
+            msg += f"Transfer {self.token.decimal_str_amount(self.amount)} {self.token.symbol} to: {self.to_address.lower()}\n"
+        if self.fee != 0:
+            msg += f"Fee: {self.token.decimal_str_amount(self.fee)} {self.token.symbol}\n"
+        return msg
 
     def encoded_message(self) -> bytes:
         return b"".join([
@@ -272,16 +303,16 @@ class Transfer(EncodedTx):
 
     def dict(self):
         return {
-            "type":       "Transfer",
-            "accountId":  self.account_id,
-            "from":       self.from_address,
-            "to":         self.to_address,
-            "token":      self.token.id,
-            "fee":        self.fee,
-            "nonce":      self.nonce,
-            "signature":  self.signature.dict(),
-            "amount":     self.amount,
-            "validFrom":  self.valid_from,
+            "type": "Transfer",
+            "accountId": self.account_id,
+            "from": self.from_address,
+            "to": self.to_address,
+            "token": self.token.id,
+            "fee": self.fee,
+            "nonce": self.nonce,
+            "signature": self.signature.dict(),
+            "amount": self.amount,
+            "validFrom": self.valid_from,
             "validUntil": self.valid_until,
         }
 
@@ -300,16 +331,23 @@ class Withdraw(EncodedTx):
     signature: Optional[TxSignature] = None
 
     def tx_type(self) -> int:
-        return 3
+        return EncodedTxType.WITHDRAW
 
     def human_readable_message(self) -> str:
         msg = ""
-
         if self.amount != 0:
             msg += f"Withdraw {self.token.decimal_str_amount(self.amount)} {self.token.symbol} to: {self.to_address.lower()}\n"
         if self.fee != 0:
             msg += f"Fee: {self.token.decimal_str_amount(self.fee)} {self.token.symbol}\n"
         return msg + f"Nonce: {self.nonce}"
+
+    def batch_message_part(self) -> str:
+        msg = ""
+        if self.amount != 0:
+            msg += f"Withdraw {self.token.decimal_str_amount(self.amount)} {self.token.symbol} to: {self.to_address.lower()}\n"
+        if self.fee != 0:
+            msg += f"Fee: {self.token.decimal_str_amount(self.fee)} {self.token.symbol}\n"
+        return msg
 
     def encoded_message(self) -> bytes:
         return b"".join([
@@ -328,16 +366,16 @@ class Withdraw(EncodedTx):
 
     def dict(self):
         return {
-            "type":       "Withdraw",
-            "accountId":  self.account_id,
-            "from":       self.from_address,
-            "to":         self.to_address,
-            "token":      self.token.id,
-            "fee":        self.fee,
-            "nonce":      self.nonce,
-            "signature":  self.signature.dict(),
-            "amount":     self.amount,
-            "validFrom":  self.valid_from,
+            "type": "Withdraw",
+            "accountId": self.account_id,
+            "from": self.from_address,
+            "to": self.to_address,
+            "token": self.token.id,
+            "fee": self.fee,
+            "nonce": self.nonce,
+            "signature": self.signature.dict(),
+            "amount": self.amount,
+            "validFrom": self.valid_from,
             "validUntil": self.valid_until,
         }
 
@@ -354,7 +392,7 @@ class ForcedExit(EncodedTx):
     signature: Optional[TxSignature] = None
 
     def tx_type(self) -> int:
-        return 8
+        return EncodedTxType.FORCED_EXIT
 
     def encoded_message(self) -> bytes:
         return b"".join([
@@ -373,18 +411,24 @@ class ForcedExit(EncodedTx):
         message = f"ForcedExit {self.token.symbol} to: {self.target.lower()}\nFee: {self.token.decimal_str_amount(self.fee)} {self.token.symbol}\nNonce: {self.nonce}"
         return message
 
+    def batch_message_part(self) -> str:
+        message = f"ForcedExit {self.token.symbol} to: {self.target.lower()}\n" \
+                  f"Fee: {self.token.decimal_str_amount(self.fee)} {self.token.symbol}\n"
+        return message
+
     def dict(self):
         return {
-            "type":               "ForcedExit",
+            "type": "ForcedExit",
             "initiatorAccountId": self.initiator_account_id,
-            "target":             self.target,
-            "token":              self.token.id,
-            "fee":                self.fee,
-            "nonce":              self.nonce,
-            "signature":          self.signature.dict(),
-            "validFrom":          self.valid_from,
-            "validUntil":         self.valid_until,
+            "target": self.target,
+            "token": self.token.id,
+            "fee": self.fee,
+            "nonce": self.nonce,
+            "signature": self.signature.dict(),
+            "validFrom": self.valid_from,
+            "validUntil": self.valid_until,
         }
+
 
 @dataclass
 class Order(EncodedTx):
@@ -399,6 +443,41 @@ class Order(EncodedTx):
     valid_until: int
     signature: Optional[TxSignature] = None
     eth_signature: Optional[TxEthSignature] = None
+
+    @classmethod
+    def from_json(cls, json: dict, tokens: Tokens):
+
+        def from_optional(value: Optional[Token]) -> Token:
+            if value is None:
+                raise ValueError(f"Token None value should not be used")
+            return value
+
+        token_sell_id: int = json["tokenSell"]
+        token_buy_id: int = json["tokenBuy"]
+        token_sell = from_optional(tokens.find_by_id(token_sell_id))
+        token_buy = from_optional(tokens.find_by_id(token_buy_id))
+        ratio = json["ratio"]
+
+        # INFO: could be None
+        signature = json.get("signature")
+        if signature is not None:
+            signature = TxSignature.from_dict(signature)
+        ether_sig = json.get("ethSignature")
+        if ether_sig is not None:
+            ether_sig = TxEthSignature.from_dict(ether_sig)
+        return cls(
+            account_id=json["accountId"],
+            recipient=json["recipient"],
+            nonce=json["nonce"],
+            token_sell=token_sell,
+            token_buy=token_buy,
+            amount=json["amount"],
+            ratio=Fraction(ratio[0], ratio[1]),
+            valid_from=json["validFrom"],
+            valid_until=json["validUntil"],
+            signature=signature,
+            eth_signature=ether_sig
+        )
 
     def tx_type(self) -> int:
         raise NotImplementedError
@@ -422,6 +501,9 @@ class Order(EncodedTx):
             serialize_timestamp(self.valid_until)
         ])
 
+    def batch_message_part(self) -> str:
+        pass
+
     def human_readable_message(self) -> str:
         if self.amount == 0:
             header = f'Limit order for {self.token_sell.symbol} -> {self.token_buy.symbol}'
@@ -439,18 +521,46 @@ class Order(EncodedTx):
 
     def dict(self):
         return {
-            "accountId":        self.account_id,
-            "recipient":        self.recipient,
-            "nonce":            self.nonce,
-            "tokenSell":        self.token_sell.id,
-            "tokenBuy":         self.token_buy.id,
-            "amount":           self.amount,
-            "ratio":            (self.ratio.numerator, self.ratio.denominator),
-            "validFrom":        self.valid_from,
-            "validUntil":       self.valid_until,
-            "signature":        self.signature.dict() if self.signature else None,
-            "ethSignature":     self.eth_signature.dict() if self.eth_signature else None,
+            "accountId": self.account_id,
+            "recipient": self.recipient,
+            "nonce": self.nonce,
+            "tokenSell": self.token_sell.id,
+            "tokenBuy": self.token_buy.id,
+            "amount": self.amount,
+            "ratio": (self.ratio.numerator, self.ratio.denominator),
+            "validFrom": self.valid_from,
+            "validUntil": self.valid_until,
+            "signature": self.signature.dict() if self.signature else None,
+            "ethSignature": self.eth_signature.dict() if self.eth_signature else None,
         }
+
+    def is_valid_eth_signature(self, signer_address: str) -> bool:
+        address = self._recover_signer_address()
+        return signer_address == address
+
+    def _recover_signer_address(self) -> str:
+        """
+        INFO: particular case implementation with dependency from Web3 interface
+              if it's needed to generelize for all Obejct type(Transfer, Swap etc) move to etherium_signer module
+              with interface & implemnetation for Web3 as Validator class( Visitor pattern )
+        """
+        from web3.auto import w3
+        from eth_account.messages import encode_defunct
+
+        msg = self.human_readable_message().encode()
+        encoded_message = encode_defunct(msg)
+
+        def get_sig(opt_value: Optional[TxEthSignature]) -> TxEthSignature:
+            if opt_value is None:
+                raise ValueError()
+            return opt_value
+
+        # INFO: remove prefix 0x
+        eth_sig = get_sig(self.eth_signature)
+        sig = bytes.fromhex(eth_sig.signature[2:])
+        return w3.eth.account.recover_message(encoded_message, signature=sig)
+
+
 
 @dataclass
 class Swap(EncodedTx):
@@ -464,14 +574,21 @@ class Swap(EncodedTx):
     signature: Optional[TxSignature] = None
 
     def tx_type(self) -> int:
-        return 11
+        return EncodedTxType.SWAP
 
     def human_readable_message(self) -> str:
         if self.fee != 0:
-            message =  f'Swap fee: {self.fee_token.decimal_str_amount(self.fee)} {self.fee_token.symbol}\n'
+            message = f'Swap fee: {self.fee_token.decimal_str_amount(self.fee)} {self.fee_token.symbol}\n'
         else:
             message = ''
         message += f'Nonce: {self.nonce}'
+        return message
+
+    def batch_message_part(self) -> str:
+        if self.fee != 0:
+            message = f'Swap fee: {self.fee_token.decimal_str_amount(self.fee)} {self.fee_token.symbol}\n'
+        else:
+            message = ''
         return message
 
     def encoded_message(self) -> bytes:
@@ -494,16 +611,17 @@ class Swap(EncodedTx):
 
     def dict(self):
         return {
-            "type":             "Swap",
-            "submitterId":      self.submitter_id,
+            "type": "Swap",
+            "submitterId": self.submitter_id,
             "submitterAddress": self.submitter_address,
-            "feeToken":         self.fee_token.id,
-            "fee":              self.fee,
-            "nonce":            self.nonce,
-            "signature":        self.signature.dict() if self.signature else None,
-            "amounts":          self.amounts,
-            "orders":           (self.orders[0].dict(), self.orders[1].dict())
+            "feeToken": self.fee_token.id,
+            "fee": self.fee,
+            "nonce": self.nonce,
+            "signature": self.signature.dict() if self.signature else None,
+            "amounts": self.amounts,
+            "orders": (self.orders[0].dict(), self.orders[1].dict())
         }
+
 
 @dataclass
 class MintNFT(EncodedTx):
@@ -517,7 +635,7 @@ class MintNFT(EncodedTx):
     signature: Optional[TxSignature] = None
 
     def tx_type(self) -> int:
-        return 9
+        return EncodedTxType.MINT_NFT
 
     def encoded_message(self) -> bytes:
         return b"".join([
@@ -533,21 +651,28 @@ class MintNFT(EncodedTx):
         ])
 
     def human_readable_message(self) -> str:
-        message = f"MintNFT {self.content_hash} for: {self.recipient.lower()}\nFee: {self.fee_token.decimal_str_amount(self.fee)} {self.fee_token.symbol}\nNonce: {self.nonce}"
+        message = f"MintNFT {self.content_hash} for: {self.recipient.lower()}\n" \
+                  f"Fee: {self.fee_token.decimal_str_amount(self.fee)} {self.fee_token.symbol}\nNonce: {self.nonce}"
+        return message
+
+    def batch_message_part(self) -> str:
+        message = f"MintNFT {self.content_hash} for: {self.recipient.lower()}\n" \
+                  f"Fee: {self.fee_token.decimal_str_amount(self.fee)} {self.fee_token.symbol}\n"
         return message
 
     def dict(self):
         return {
-            "type":               "MintNFT",
-            "creatorId":          self.creator_id,
-            "creatorAddress":     self.creator_address,
-            "contentHash":        self.content_hash,
-            "recipient":          self.recipient,
-            "feeToken":           self.fee_token.id,
-            "fee":                self.fee,
-            "nonce":              self.nonce,
-            "signature":          self.signature.dict(),
+            "type": "MintNFT",
+            "creatorId": self.creator_id,
+            "creatorAddress": self.creator_address,
+            "contentHash": self.content_hash,
+            "recipient": self.recipient,
+            "feeToken": self.fee_token.id,
+            "fee": self.fee,
+            "nonce": self.nonce,
+            "signature": self.signature.dict(),
         }
+
 
 @dataclass
 class WithdrawNFT(EncodedTx):
@@ -563,7 +688,7 @@ class WithdrawNFT(EncodedTx):
     signature: Optional[TxSignature] = None
 
     def tx_type(self) -> int:
-        return 10
+        return EncodedTxType.WITHDRAW_NFT
 
     def encoded_message(self) -> bytes:
         return b"".join([
@@ -584,20 +709,39 @@ class WithdrawNFT(EncodedTx):
         message = f"WithdrawNFT {self.token_id} to: {self.to_address.lower()}\nFee: {self.fee_token.decimal_str_amount(self.fee)} {self.fee_token.symbol}\nNonce: {self.nonce}"
         return message
 
+    def batch_message_part(self) -> str:
+        message = f"WithdrawNFT {self.token_id} to: {self.to_address.lower()}\n" \
+                  f"Fee: {self.fee_token.decimal_str_amount(self.fee)} {self.fee_token.symbol}\n"
+        return message
+
     def dict(self):
         return {
-            "type":                 "WithdrawNFT",
-            "accountId":            self.account_id,
-            "from":                 self.from_address,
-            "to":                   self.to_address,
-            "feeToken":             self.fee_token.id,
-            "fee":                  self.fee,
-            "nonce":                self.nonce,
-            "validFrom":            self.valid_from,
-            "validUntil":           self.valid_until,
-            "token":                self.token_id,
-            "signature":            self.signature.dict(),
+            "type": "WithdrawNFT",
+            "accountId": self.account_id,
+            "from": self.from_address,
+            "to": self.to_address,
+            "feeToken": self.fee_token.id,
+            "fee": self.fee,
+            "nonce": self.nonce,
+            "validFrom": self.valid_from,
+            "validUntil": self.valid_until,
+            "token": self.token_id,
+            "signature": self.signature.dict(),
         }
+
+
+class EncodedTxValidator:
+    def __init__(self, library: ZkSyncLibrary):
+        self.library = library
+
+    def is_valid_signature(self, tx):
+        zk_sync_signature: TxSignature = tx.signature
+        if zk_sync_signature is None:
+            return False
+        bytes_signature = bytes.fromhex(zk_sync_signature.signature)
+        pubkey = bytes.fromhex(zk_sync_signature.public_key)
+        return self.library.is_valid_signature(tx.encoded_message(), pubkey, bytes_signature)
+
 
 @dataclass
 class TransactionWithSignature:
@@ -606,6 +750,38 @@ class TransactionWithSignature:
 
     def dict(self):
         return {
-            'tx':        self.tx.dict(),
+            'tx': self.tx.dict(),
             'signature': self.signature.dict(),
         }
+
+
+@dataclass()
+class TransactionWithOptionalSignature:
+    tx: EncodedTx
+    signature: Union[None, TxEthSignature, List[TxSignature]] = None
+
+    def dict(self):
+        if self.signature is None:
+            null_value = None
+            return {
+                'signature': null_value,
+                'tx': self.tx.dict()
+            }
+        else:
+            if isinstance(self.signature, list):
+                null_value = None
+                value = []
+                for sig in self.signature:
+                    if sig is None:
+                        value.append(null_value)
+                    else:
+                        value.append(sig.dict())
+                return {
+                    'signature': value,
+                    'tx': self.tx.dict()
+                }
+            else:
+                return {
+                    'signature': self.signature.dict(),
+                    'tx': self.tx.dict()
+                }

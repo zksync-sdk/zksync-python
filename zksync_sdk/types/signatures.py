@@ -9,16 +9,25 @@ class SignatureType(Enum):
 
 @dataclass
 class TxEthSignature:
-    type: SignatureType
+    sig_type: SignatureType
     signature: str
 
-    def __init__(self, type: SignatureType, signature: bytes):
+    @classmethod
+    def from_dict(cls, json: dict):
+        """
+        Only the difference from __init__ that signature is already in hex format
+        """
+        obj = cls(sig_type=SignatureType(json["type"]), signature=b"")
+        obj.signature = json["signature"]
+        return obj
+
+    def __init__(self, sig_type: SignatureType, signature: bytes):
         self.signature = signature.hex()
-        self.type = type
+        self.sig_type = sig_type
 
     def dict(self):
         return {
-            "type":      self.type.value,
+            "type":      self.sig_type.value,
             "signature": self.signature
         }
 
@@ -27,6 +36,16 @@ class TxEthSignature:
 class TxSignature:
     public_key: str
     signature: str
+
+    @classmethod
+    def from_dict(cls, json: dict):
+        """
+        Only the difference from __init__ is that values are already in hex format
+        """
+        obj = cls(public_key=b"", signature=b"")
+        obj.public_key = json["pubKey"]
+        obj.signature = json["signature"]
+        return obj
 
     def __init__(self, public_key: bytes, signature: bytes):
         self.public_key = public_key.hex()

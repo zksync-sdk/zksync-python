@@ -7,7 +7,7 @@ from zksync_sdk.ethereum_signer import EthereumSignerInterface
 from zksync_sdk.types import (ChangePubKey, ChangePubKeyCREATE2, ChangePubKeyEcdsa,
                               ChangePubKeyTypes, EncodedTx, ForcedExit, Token, TokenLike,
                               Tokens, TransactionWithSignature, Transfer, TxEthSignature,
-                              Withdraw, MintNFT, WithdrawNFT, NFT, Order, Swap, RatioType)
+                              Withdraw, MintNFT, WithdrawNFT, NFT, Order, Swap, RatioType, token_ratio_to_wei_ratio)
 from zksync_sdk.zksync_provider import FeeTxType, ZkSyncProviderInterface
 from zksync_sdk.zksync_signer import ZkSyncSigner
 from zksync_sdk.zksync_provider.transaction import Transaction
@@ -354,9 +354,7 @@ class Wallet:
         recipient = recipient or self.address()
 
         if ratio_type == RatioType.token:
-            num = token_sell_obj.from_decimal(Decimal(ratio.numerator))
-            den = token_buy_obj.from_decimal(Decimal(ratio.denominator))
-            ratio = Fraction(num, den)
+            ratio = token_ratio_to_wei_ratio(ratio, token_sell_obj, token_buy_obj)
 
         account_id = await self.get_account_id()
 

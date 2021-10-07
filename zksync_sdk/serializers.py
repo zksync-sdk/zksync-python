@@ -1,5 +1,4 @@
 from typing import List
-from fractions import Fraction
 
 AMOUNT_EXPONENT_BIT_WIDTH = 5
 AMOUNT_MANTISSA_BIT_WIDTH = 35
