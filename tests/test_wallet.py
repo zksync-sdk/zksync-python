@@ -280,6 +280,7 @@ class TestWallet(IsolatedAsyncioTestCase):
               PS: previous version of the tests was passing due to no one does not test the trasaction result
                   it failed
         """
+
         account_state = await self.wallet.zk_provider.get_state(self.nft_transfer_account_address)
         nfts = account_state.verified.nfts.items()
         first_value = None
@@ -318,6 +319,7 @@ class TestWallet(IsolatedAsyncioTestCase):
                   it failed
         """
         account_state = await self.wallet.zk_provider.get_state(self.wallet.address())
+
         nfts = account_state.verified.nfts.values()
         if not nfts:
             return
@@ -375,6 +377,25 @@ class TestEthereumProvider(IsolatedAsyncioTestCase):
             id=20, symbol='BAT',
             decimals=18)
         assert await self.ethereum_provider.full_exit(token, 6713)
+
+    async def test_full_exit_nft(self):
+        """
+        INFO: made by getting all NFT by corresponded address & dumping,
+                Symbol: 'NFT-70848'
+                '70848'
+                address: '0x5e71f0f9b891f22d79ff8697dd4e3e0db371cda5'
+                creator_address: '0x995a8b7f96cb837533b79775b6209696d51f435c'
+                id: 70848
+                account_id: 36357
+        """
+        account_id = 36357
+        token = Token(
+            address=Web3.toChecksumAddress('0x5e71f0f9b891f22d79ff8697dd4e3e0db371cda5'),
+            id=70848,
+            symbol='NFT-70848',
+            decimals=0
+        )
+        assert await self.ethereum_provider.full_exit_nft(token, account_id)
 
     async def test_is_deposit_approved(self):
         token = Token(

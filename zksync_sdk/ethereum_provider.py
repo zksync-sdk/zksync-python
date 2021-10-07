@@ -28,6 +28,9 @@ class EthereumProvider:
     async def full_exit(self, token: Token, account_id: int):
         return self.zksync.full_exit(account_id, token.address)
 
+    async def full_exit_nft(self, nft: Token, account_id: int):
+        return self.zksync.full_exit_nft(account_id, nft.id)
+
     async def set_auth_pubkey_hash(self, pubkey_hash: bytes, nonce: int):
         return self.zksync.set_auth_pub_key_hash(pubkey_hash, nonce)
 
