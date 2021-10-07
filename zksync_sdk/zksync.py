@@ -44,8 +44,8 @@ class ZkSync(Contract):
     def full_exit(self, account_id: int, token_address: str, ):
         return self._call_method("requestFullExit", account_id, token_address)
 
-    def full_exit_nft(self, account_id: int, token_address: str):
-        return self._call_method("requestFullExitNFT", account_id, token_address)
+    def full_exit_nft(self, account_id: int, token_id: int):
+        return self._call_method("requestFullExitNFT", account_id, token_id)
 
     def set_auth_pub_key_hash(self, pub_key_hash: bytes, nonce: int):
         return self._call_method("setAuthPubkeyHash", pub_key_hash, nonce)

@@ -863,9 +863,9 @@
           "type": "uint32"
         },
         {
-          "internalType": "address",
+          "internalType": "uint32",
           "name": "_token",
-          "type": "address"
+          "type": "uint32"
         }
       ],
       "name": "requestFullExitNFT",
