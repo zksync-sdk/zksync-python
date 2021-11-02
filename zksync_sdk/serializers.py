@@ -76,9 +76,9 @@ def integer_to_float(integer: int, exp_bits: int, mantissa_bits: int, exp_base: 
 
 
 def integer_to_float_up(integer: int, exp_bits: int, mantissa_bits: int, exp_base) -> List[int]:
-    max_exponent_power = pow(2, exp_bits) - 1
-    max_exponent = pow(exp_base, max_exponent_power)
-    max_mantissa = pow(2, mantissa_bits) - 1
+    max_exponent_power = 2 ** exp_bits - 1
+    max_exponent = exp_base ** max_exponent_power
+    max_mantissa = 2 ** mantissa_bits - 1
 
     if integer > max_mantissa * max_exponent:
         raise WrongIntegerError("Integer is too big")
@@ -89,15 +89,10 @@ def integer_to_float_up(integer: int, exp_bits: int, mantissa_bits: int, exp_bas
         exponent_temp = exponent_temp * exp_base
         exponent += 1
 
-    # mantissa = integer // exponent_temp
     mantissa = int(ceil(integer / exponent_temp))
-    if not divmod(integer, exponent_temp):
-        mantissa += 1
-
     encoding = num_to_bits(exponent, exp_bits) + num_to_bits(mantissa, mantissa_bits)
-    encoding.reverse()
-    result = bits_into_bytes_in_be_order(encoding)
-    result.reverse()
+    data = list(reversed(encoding))
+    result = list(reversed(bits_into_bytes_in_be_order(data)))
 
     return result
 
