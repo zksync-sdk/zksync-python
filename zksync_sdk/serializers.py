@@ -66,9 +66,7 @@ def integer_to_float(integer: int, exp_bits: int, mantissa_bits: int, exp_base: 
             mantissa = max_mantissa
             exponent -= 1
 
-    data = []
-    data.extend(num_to_bits(exponent, exp_bits))
-    data.extend(num_to_bits(mantissa, mantissa_bits))
+    data = num_to_bits(exponent, exp_bits) + num_to_bits(mantissa, mantissa_bits)
     data = list(reversed(data))
     result = list(reversed(bits_into_bytes_in_be_order(data)))
 
