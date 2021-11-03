@@ -1,4 +1,5 @@
 from typing import List
+from math import ceil
 
 AMOUNT_EXPONENT_BIT_WIDTH = 5
 AMOUNT_MANTISSA_BIT_WIDTH = 35
@@ -33,6 +34,9 @@ def int_to_bytes(val: int, length=4):
 
 
 def num_to_bits(integer: int, bits: int):
+    """
+    INFO: Can't be used without correct input data of value & corresponded amount of bits, take care
+    """
     results = []
     for i in range(bits):
         results.append(integer & 1)
@@ -62,10 +66,30 @@ def integer_to_float(integer: int, exp_bits: int, mantissa_bits: int, exp_base: 
             mantissa = max_mantissa
             exponent -= 1
 
-    data = []
-    data.extend(num_to_bits(exponent, exp_bits))
-    data.extend(num_to_bits(mantissa, mantissa_bits))
+    data = num_to_bits(exponent, exp_bits) + num_to_bits(mantissa, mantissa_bits)
     data = list(reversed(data))
+    result = list(reversed(bits_into_bytes_in_be_order(data)))
+
+    return result
+
+
+def integer_to_float_up(integer: int, exp_bits: int, mantissa_bits: int, exp_base) -> List[int]:
+    max_exponent_power = 2 ** exp_bits - 1
+    max_exponent = exp_base ** max_exponent_power
+    max_mantissa = 2 ** mantissa_bits - 1
+
+    if integer > max_mantissa * max_exponent:
+        raise WrongIntegerError("Integer is too big")
+
+    exponent = 0
+    exponent_temp = 1
+    while integer > max_mantissa * exponent_temp:
+        exponent_temp = exponent_temp * exp_base
+        exponent += 1
+
+    mantissa = int(ceil(integer / exponent_temp))
+    encoding = num_to_bits(exponent, exp_bits) + num_to_bits(mantissa, mantissa_bits)
+    data = list(reversed(encoding))
     result = list(reversed(bits_into_bytes_in_be_order(data)))
 
     return result
@@ -135,6 +159,18 @@ def float_to_integer(float_bytes: bytes, exp_bits, mantissa_bits, exp_base_numbe
     return exponent * mantissa
 
 
+def pack_amount_up(amount: int):
+    return bytes(reverse_bits(
+        integer_to_float_up(amount, AMOUNT_EXPONENT_BIT_WIDTH, AMOUNT_MANTISSA_BIT_WIDTH, 10)
+    ))
+
+
+def pack_fee_up(fee: int):
+    return bytes(reverse_bits(
+        integer_to_float_up(fee, FEE_EXPONENT_BIT_WIDTH, FEE_MANTISSA_BIT_WIDTH, 10)
+    ))
+
+
 def closest_packable_amount(amount: int) -> int:
     packed_amount = pack_amount(amount)
     return float_to_integer(
@@ -145,6 +181,11 @@ def closest_packable_amount(amount: int) -> int:
     )
 
 
+def closest_greater_or_eq_packable_amount(amount: int) -> int:
+    packed_amount = pack_amount_up(amount)
+    return float_to_integer(packed_amount, AMOUNT_EXPONENT_BIT_WIDTH, AMOUNT_MANTISSA_BIT_WIDTH, 10)
+
+
 def closest_packable_transaction_fee(fee: int) -> int:
     packed_fee = pack_fee(fee)
     return float_to_integer(
@@ -153,6 +194,11 @@ def closest_packable_transaction_fee(fee: int) -> int:
         FEE_MANTISSA_BIT_WIDTH,
         10
     )
+
+
+def closest_greater_or_eq_packable_fee(fee: int) -> int:
+    packed_fee = pack_fee_up(fee)
+    return float_to_integer(packed_fee, FEE_EXPONENT_BIT_WIDTH, FEE_MANTISSA_BIT_WIDTH, 10)
 
 
 def packed_fee_checked(fee: int):
