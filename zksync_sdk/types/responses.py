@@ -1,4 +1,5 @@
 from typing import Any, Dict, Optional
+from enum import Enum
 from decimal import Decimal
 from zksync_sdk.types.transactions import Token
 
@@ -47,9 +48,16 @@ class State(BaseModel):
         alias_generator = to_camel
 
 
+class AccountTypes(str, Enum):
+    OWNED = "Owned",
+    CREATE2 = "CREATE2",
+    NO_2FA = "No2FA"
+
+
 class AccountState(BaseModel):
     address: str
     id: Optional[int]
+    account_type: Optional[AccountTypes]
     depositing: Optional[Depositing]
     committed: Optional[State]
     verified: Optional[State]

@@ -13,6 +13,7 @@ from zksync_sdk.serializers import (int_to_bytes, packed_amount_checked, packed_
                                     serialize_nonce, serialize_timestamp,
                                     serialize_token_id, serialize_ratio_part)
 from zksync_sdk.types.signatures import TxEthSignature, TxSignature
+from zksync_sdk.types.auth_types import ChangePubKeyCREATE2, ChangePubKeyEcdsa
 
 DEFAULT_TOKEN_ADDRESS = "0x0000000000000000000000000000000000000000"
 
@@ -31,45 +32,11 @@ class EncodedTxType(IntEnum):
     WITHDRAW_NFT = 10
 
 
-class ChangePubKeyTypes(Enum):
-    onchain = "Onchain"
-    ecdsa = "ECDSA"
-    create2 = "CREATE2"
-
-
 class RatioType(Enum):
     # ratio that represents the lowest denominations of tokens (wei for ETH, satoshi for BTC etc.)
     wei = 'Wei',
     # ratio that represents tokens themselves
     token = 'Token'
-
-
-@dataclass
-class ChangePubKeyEcdsa:
-    batch_hash: bytes = b"\x00" * 32
-
-    def encode_message(self):
-        return self.batch_hash
-
-    def dict(self, signature: str):
-        return {"type": "ECDSA",
-                "ethSignature": signature,
-                "batchHash": f"0x{self.batch_hash.hex()}"}
-
-
-@dataclass
-class ChangePubKeyCREATE2:
-    creator_address: str
-    salt_arg: bytes
-    code_hash: bytes
-
-    def encode_message(self):
-        return self.salt_arg
-
-    def dict(self):
-        return {"type": "CREATE2",
-                "saltArg": f"0x{self.salt_arg.hex()}",
-                "codeHash": f"0x{self.code_hash.hex()}"}
 
 
 class Token(BaseModel):
@@ -111,10 +78,12 @@ class Token(BaseModel):
 
         return d_str
 
+
 def token_ratio_to_wei_ratio(token_ratio: Fraction, token_sell: Token, token_buy: Token) -> Fraction:
     num = token_sell.from_decimal(Decimal(token_ratio.numerator))
     den = token_buy.from_decimal(Decimal(token_ratio.denominator))
     return Fraction(num, den)
+
 
 class Tokens(BaseModel):
     tokens: List[Token]
@@ -559,7 +528,6 @@ class Order(EncodedTx):
         eth_sig = get_sig(self.eth_signature)
         sig = bytes.fromhex(eth_sig.signature[2:])
         return w3.eth.account.recover_message(encoded_message, signature=sig)
-
 
 
 @dataclass

@@ -1,14 +1,11 @@
 from abc import ABC, abstractmethod
 from decimal import Decimal
-from typing import List, Optional, Tuple, Union
-
-from eth_typing import Address
-
+from typing import List, Optional, Union
 from zksync_sdk.transport import JsonRPCTransport
 from zksync_sdk.types import (AccountState, ContractAddress, EncodedTx, EthOpInfo, Fee, Token,
                               TokenLike, Tokens, TransactionDetails, TransactionWithSignature,
                               TransactionWithOptionalSignature,
-                              TxEthSignature, )
+                              TxEthSignature, Toggle2FA, )
 from zksync_sdk.zksync_provider.types import FeeTxType
 from zksync_sdk.zksync_provider.transaction import Transaction
 
@@ -80,4 +77,8 @@ class ZkSyncProviderInterface(ABC):
 
     @abstractmethod
     async def get_token_price(self, token: Token) -> Decimal:
+        raise NotImplementedError
+
+    @abstractmethod
+    async def toggle_2fa(self, toggle2fa: Toggle2FA) -> bool:
         raise NotImplementedError

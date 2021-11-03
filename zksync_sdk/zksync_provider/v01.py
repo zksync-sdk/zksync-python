@@ -1,13 +1,12 @@
+from dataclasses import asdict
 from decimal import Decimal
-from typing import List, Optional, Tuple, Union
-
-from eth_typing import Address
+from typing import List, Optional, Union
 from web3 import Web3
 
 from zksync_sdk.types import (AccountState, ContractAddress, EncodedTx, EthOpInfo, Fee, Token,
                               TokenLike, Tokens, TransactionDetails, TransactionWithSignature,
                               TransactionWithOptionalSignature,
-                              TxEthSignature, )
+                              TxEthSignature, Toggle2FA, )
 from zksync_sdk.zksync_provider.error import AccountDoesNotExist
 from zksync_sdk.zksync_provider.interface import ZkSyncProviderInterface
 from zksync_sdk.zksync_provider.types import FeeTxType
@@ -64,6 +63,9 @@ class ZkSyncProviderV01(ZkSyncProviderInterface):
         data = await self.provider.request("account_info", [address])
         if data is None:
             raise AccountDoesNotExist(address=address)
+        if "accountType" in data and isinstance(data["accountType"], dict) and \
+                list(data["accountType"].keys())[0] == 'No2FA':
+            data["accountType"] = 'No2FA'
         return AccountState(**data)
 
     async def get_confirmations_for_eth_op_amount(self) -> int:
@@ -102,3 +104,7 @@ class ZkSyncProviderV01(ZkSyncProviderInterface):
     async def get_token_price(self, token: Token) -> Decimal:
         data = await self.provider.request('get_token_price', [token.symbol])
         return Decimal(data)
+
+    async def toggle_2fa(self, toggle2fa: Toggle2FA) -> bool:
+        data = await self.provider.request('toggle_2fa', [toggle2fa.dict()])
+        return 'success' in data and data['success']

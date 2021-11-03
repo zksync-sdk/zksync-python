@@ -348,6 +348,17 @@ class TestWallet(IsolatedAsyncioTestCase):
     async def test_is_signing_key_set(self):
         assert await self.wallet.is_signing_key_set()
 
+    async def test_toggle_2fa(self):
+        result = await self.wallet.enable_2fa()
+        self.assertTrue(result)
+
+        pub_key_hash = self.wallet.zk_signer.pubkey_hash_str()
+        result = await self.wallet.disable_2fa(pub_key_hash)
+        self.assertTrue(result)
+
+        result = await self.wallet.disable_2fa_with_pub_key()
+        self.assertTrue(result)
+
 
 class TestEthereumProvider(IsolatedAsyncioTestCase):
     private_key = "0xa045b52470d306ff78e91b0d2d92f90f7504189125a46b69423dc673fd6b4f3e"
