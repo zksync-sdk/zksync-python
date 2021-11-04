@@ -3,7 +3,7 @@ from fractions import Fraction
 from unittest import IsolatedAsyncioTestCase
 from zksync_sdk.zksync_provider.types import FeeTxType
 from zksync_sdk.types.responses import Fee
-
+import asyncio
 from web3 import Account, HTTPProvider, Web3
 
 from zksync_sdk import (EthereumProvider, EthereumSignerWeb3, HttpJsonRPCTransport, Wallet, ZkSync,
@@ -11,7 +11,7 @@ from zksync_sdk import (EthereumProvider, EthereumSignerWeb3, HttpJsonRPCTranspo
 from zksync_sdk.zksync_provider.batch_builder import BatchBuilder
 from zksync_sdk.network import rinkeby
 from zksync_sdk.types import ChangePubKeyEcdsa, Token, TransactionWithSignature, \
-    TransactionWithOptionalSignature, RatioType, Transfer
+    TransactionWithOptionalSignature, RatioType, Transfer, AccountTypes
 from zksync_sdk.zksync_provider.transaction import TransactionStatus
 from zksync_sdk.wallet import DEFAULT_VALID_FROM, DEFAULT_VALID_UNTIL
 
@@ -351,13 +351,17 @@ class TestWallet(IsolatedAsyncioTestCase):
     async def test_toggle_2fa(self):
         result = await self.wallet.enable_2fa()
         self.assertTrue(result)
+        await asyncio.sleep(20)
+        account_state = await self.wallet.get_account_state()
+        self.assertEqual(AccountTypes.NO_2FA, account_state.account_type)
 
         pub_key_hash = self.wallet.zk_signer.pubkey_hash_str()
         result = await self.wallet.disable_2fa(pub_key_hash)
         self.assertTrue(result)
-
-        result = await self.wallet.disable_2fa_with_pub_key()
-        self.assertTrue(result)
+        account_state = await self.wallet.get_account_state()
+        print(f"updated account state: {account_state.account_type}")
+        # result = await self.wallet.disable_2fa_with_pub_key()
+        # self.assertTrue(result)
 
 
 class TestEthereumProvider(IsolatedAsyncioTestCase):
