@@ -82,7 +82,7 @@ class Token(BaseModel):
 def token_ratio_to_wei_ratio(token_ratio: Fraction, token_sell: Token, token_buy: Token) -> Fraction:
     num = token_sell.from_decimal(Decimal(token_ratio.numerator))
     den = token_buy.from_decimal(Decimal(token_ratio.denominator))
-    return Fraction(num, den)
+    return Fraction(num, den, _normalize = False)
 
 
 class Tokens(BaseModel):
@@ -441,7 +441,7 @@ class Order(EncodedTx):
             token_sell=token_sell,
             token_buy=token_buy,
             amount=int(json["amount"]),
-            ratio=Fraction(int(ratio[0]), int(ratio[1])),
+            ratio=Fraction(int(ratio[0]), int(ratio[1]), _normalize=False),
             valid_from=json["validFrom"],
             valid_until=json["validUntil"],
             signature=signature,
