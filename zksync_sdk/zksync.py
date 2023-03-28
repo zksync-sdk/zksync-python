@@ -22,12 +22,12 @@ class Contract:
         transaction = getattr(self.contract.functions, method_name)(
             *args,
             **kwargs
-        ).buildTransaction(params)
+        ).build_transaction(params)
 
         transaction.update({'nonce': self.web3.eth.get_transaction_count(self.account.address)})
         signed_tx = self.account.sign_transaction(transaction)
         txn_hash = self.web3.eth.send_raw_transaction(signed_tx.rawTransaction)
-        txn_receipt = self.web3.eth.waitForTransactionReceipt(txn_hash)
+        txn_receipt = self.web3.eth.wait_for_transaction_receipt(txn_hash)
         return txn_receipt
 
 
