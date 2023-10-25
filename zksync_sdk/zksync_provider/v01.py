@@ -28,7 +28,7 @@ class ZkSyncProviderV01(ZkSyncProviderInterface):
 
     async def get_tokens(self) -> Tokens:
         data = await self.provider.request("tokens", None)
-        tokens = [Token(address=Web3.toChecksumAddress(token['address']),
+        tokens = [Token(address=Web3.to_checksum_address(token['address']),
                         id=token['id'],
                         symbol=token['symbol'],
                         decimals=token['decimals']
