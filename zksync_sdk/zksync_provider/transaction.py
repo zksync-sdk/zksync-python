@@ -2,6 +2,7 @@ import asyncio
 from dataclasses import dataclass
 from enum import Enum, auto
 from typing import Optional
+from zksync_sdk.types.responses import BlockInfo
 
 
 class TransactionStatus(Enum):
@@ -14,6 +15,7 @@ class TransactionStatus(Enum):
 class TransactionResult:
     status: TransactionStatus
     fail_reason: str
+    block: Optional[BlockInfo]
 
 
 class Transaction:
@@ -40,12 +42,12 @@ class Transaction:
             if attempts is not None:
                 attempts -= 1
             if "failReason" in transaction_details and transaction_details["failReason"] is not None:
-                return TransactionResult(TransactionStatus.FAILED, transaction_details['failReason'])
+                return TransactionResult(TransactionStatus.FAILED, transaction_details['failReason'], transaction_details['block'])
 
             if "block" in transaction_details:
                 block = transaction_details["block"]
                 if block is not None and "committed" in block and block["committed"]:
-                    return TransactionResult(TransactionStatus.COMMITTED, "")
+                    return TransactionResult(TransactionStatus.COMMITTED, "", block)
             if attempts_timeout is not None:
                 await asyncio.sleep(attempts_timeout / 1000)
 
@@ -63,19 +65,19 @@ class Transaction:
             if attempts is not None:
                 attempts -= 1
             if "failReason" in transaction_details and transaction_details["failReason"] is not None:
-                return TransactionResult(TransactionStatus.FAILED, transaction_details['failReason'])
+                return TransactionResult(TransactionStatus.FAILED, transaction_details['failReason'], transaction_details['block'])
 
             if "block" in transaction_details:
                 block = transaction_details["block"]
                 if block is not None and "committed" in block and block["committed"]:
-                    intermediate_status = TransactionResult(TransactionStatus.COMMITTED, "")
+                    intermediate_status = TransactionResult(TransactionStatus.COMMITTED, "", block)
 
             if "block" in transaction_details:
                 block = transaction_details["block"]
                 if block is not None and \
                         "verified" in block and \
                         block["verified"]:
-                    return TransactionResult(TransactionStatus.VERIFIED, "")
+                    return TransactionResult(TransactionStatus.VERIFIED, "", block)
 
             if attempts_timeout is not None:
                 await asyncio.sleep(attempts_timeout / 1000)
