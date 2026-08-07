@@ -14,7 +14,7 @@ RUN wget -O /lib/zks-crypto-linux-x64.a  https://github.com/zksync-sdk/zksync-cr
 COPY setup.cfg /src
 COPY setup.py /src
 COPY .git /src/.git
-RUN python3 setup.py install
+RUN pip install .
 COPY . /src
 ENV ZK_SYNC_LIBRARY_PATH=/lib/zks-crypto-linux-x64.so
 CMD ["tox"]
