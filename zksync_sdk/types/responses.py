@@ -28,7 +28,7 @@ class NFT(Token):
     content_hash: str
     creator_address: str
     serial_id: int
-    decimals = 0
+    decimals: int = 0
 
     def decimal_amount(self, amount: int) -> Decimal:
         return Decimal(amount)

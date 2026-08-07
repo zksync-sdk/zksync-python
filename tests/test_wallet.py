@@ -386,14 +386,14 @@ class TestEthereumProvider(IsolatedAsyncioTestCase):
 
     async def test_approve_deposit(self):
         token = Token(
-            address=Web3.toChecksumAddress('0xeb8f08a975ab53e34d8a0330e0d34de942c95926'),
+            address=Web3.to_checksum_address('0xeb8f08a975ab53e34d8a0330e0d34de942c95926'),
             id=20, symbol='USDC',
             decimals=18)
         assert await self.ethereum_provider.approve_deposit(token, Decimal(1))
 
     async def test_full_exit(self):
         token = Token(
-            address=Web3.toChecksumAddress('0xD2084eA2AE4bBE1424E4fe3CDE25B713632fb988'),
+            address=Web3.to_checksum_address('0xD2084eA2AE4bBE1424E4fe3CDE25B713632fb988'),
             id=20, symbol='BAT',
             decimals=18)
         assert await self.ethereum_provider.full_exit(token, 6713)
@@ -410,7 +410,7 @@ class TestEthereumProvider(IsolatedAsyncioTestCase):
         """
         account_id = 36357
         token = Token(
-            address=Web3.toChecksumAddress('0x5e71f0f9b891f22d79ff8697dd4e3e0db371cda5'),
+            address=Web3.to_checksum_address('0x5e71f0f9b891f22d79ff8697dd4e3e0db371cda5'),
             id=70848,
             symbol='NFT-70848',
             decimals=0
@@ -419,7 +419,7 @@ class TestEthereumProvider(IsolatedAsyncioTestCase):
 
     async def test_is_deposit_approved(self):
         token = Token(
-            address=Web3.toChecksumAddress('0xD2084eA2AE4bBE1424E4fe3CDE25B713632fb988'),
+            address=Web3.to_checksum_address('0xD2084eA2AE4bBE1424E4fe3CDE25B713632fb988'),
             id=20, symbol='BAT',
             decimals=18)
         assert await self.ethereum_provider.is_deposit_approved(token, 1)
